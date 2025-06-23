@@ -1,0 +1,52 @@
+{
+  "personal_data": {
+    "age": 45,
+    "gender": "Male",
+    "city": "Mumbai",
+    "risk_profile": "Moderate",
+    "expected_retirement_age": 60,
+    "marital_status": "Married",
+    "no_of_dependents": 1
+  },
+  "income_data": {
+    "salaried_income": 250000,
+    "business_income": 0,
+    "freelance_income": 20000,
+    "investment_returns": 25000,
+    "rental_income": 20000
+  },
+  "expense_data": {
+    "housing_cost": 5000,
+    "utilities_and_bills": 4000,
+    "groceries_and_essentials": 8000,
+    "term_insurance_premium": 4000,
+    "medical_insurance_premium": 2000,
+    "discretionary_expense": 15000
+  },
+  "asset_data": {
+    "equity_sip": 50000,
+    "debt_sip": 20000,
+    "retirement_sip": 25000,
+    "total_savings_balance": 5000000,
+    "total_equity_investments": 5000000,
+    "total_debt_investments": 1500000,
+    "total_retirement_investments": 2000000,
+    "total_real_estate_investments": 10000000
+  },
+  "liability_data": {
+    "credit_card_emi": 0,
+    "personal_loan_emi": 0,
+    "car_loan_emi": 30000,
+    "student_loan_emi": 0,
+    "home_loan_emi": 40000,
+    "outstanding_credit_card_balance": 0,
+    "outstanding_personal_loan_balance": 0,
+    "outstanding_car_loan_balance": 500000,
+    "outstanding_student_loan_balance": 0,
+    "outstanding_home_loan_balance": 5000000
+  },
+  "insurance_data": {
+    "total_medical_cover": 10000000,
+    "total_term_cover": 50000000
+  }
+}

@@ -1,0 +1,124 @@
+/* ------------------------------------------------------------------
+   Base page setup
+   ------------------------------------------------------------------ */
+@page {
+  margin: 1.5cm;
+}
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #333333;
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------------
+   Headings
+   ------------------------------------------------------------------ */
+h1 {
+  font-size: 32px;
+  color: #0b3d91;
+  margin-bottom: 0.4em;
+  border-bottom: 3px solid #0b3d91;
+  padding-bottom: 0.2em;
+}
+
+h2 {
+  font-size: 24px;
+  color: #0b3d91;
+  margin-top: 1em;
+  margin-bottom: 0.3em;
+  border-bottom: 1px solid #cccccc;
+  padding-bottom: 0.1em;
+}
+
+h3 {
+  font-size: 18px;
+  color: #0b3d91;
+  margin-top: 0.8em;
+  margin-bottom: 0.2em;
+}
+
+/* ------------------------------------------------------------------
+   Paragraphs and lists
+   ------------------------------------------------------------------ */
+p {
+  margin: 0.5em 0;
+}
+
+ul, ol {
+  margin: 0.5em 0 0.5em 1.2em;
+}
+li {
+  margin-bottom: 0.3em;
+}
+
+/* ------------------------------------------------------------------
+   Blockquotes
+   ------------------------------------------------------------------ */
+blockquote {
+  border-left: 4px solid #eeeeee;
+  margin: 1em 0;
+  padding-left: 1em;
+  color: #666666;
+  font-style: italic;
+}
+
+/* ------------------------------------------------------------------
+   Tables
+   ------------------------------------------------------------------ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 12px;
+}
+th, td {
+  border: 1px solid #dddddd;
+  padding: 6px 8px;
+  text-align: left;
+}
+th {
+  background-color: #f2f2f2;
+  color: #333333;
+  font-weight: bold;
+}
+
+/* Appendix tables can be slightly smaller */
+table.appendix th,
+table.appendix td {
+  font-size: 10px;
+  padding: 4px 6px;
+}
+
+/* ------------------------------------------------------------------
+   Code blocks
+   ------------------------------------------------------------------ */
+pre, code {
+  font-family: "Courier New", Courier, monospace;
+}
+pre {
+  background: #f8f8f8;
+  padding: 0.8em;
+  border-left: 4px solid #0b3d91;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+/* ------------------------------------------------------------------
+   Page breaks
+   ------------------------------------------------------------------ */
+h1, h2 {
+  page-break-after: avoid;
+}
+table {
+  page-break-inside: avoid;
+}
+
+/* ------------------------------------------------------------------
+   Section labels (A., B., C. style) — use a custom class:
+   e.g. <h2 class="section">A. Overall Profile Review</h2>
+   ------------------------------------------------------------------ */
+.section {
+  font-variant: small-caps;
+  color: #0b3d91;
+}
+
