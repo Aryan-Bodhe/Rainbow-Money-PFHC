@@ -1,14 +1,24 @@
+from colorama import Fore
+
 class UserProfileNotProvidedError(Exception): 
     pass
 
 class InvalidFinanceParameterError(Exception):
     def __init__(self, errored_parameter:str, erring_parameter:str):
-        message = f"Cannot compute '{errored_parameter}' due to invalid (possibly zero) value of '{erring_parameter}'."
+        message = Fore.RED + f"[ERROR] Cannot compute '{errored_parameter}' due to invalid (possibly zero) value of '{erring_parameter}'." + Fore.RESET
         super().__init__(message)
 
 class InvalidJsonFormatError(Exception):
     def __init__(self, var:str):
-        message = f"Expected {var} to be JSON style-string."
+        message = Fore.RED + f"[ERROR] Expected {var} to be JSON style-string." + Fore.RESET
         super().__init__(message)
 
-class NoMarkdownFileToConvertToPDFError(Exception):...
+class NoMarkdownFileToConvertToPDFError(Exception):
+    def __init__(self):
+        message = Fore.RED + "[ERROR] No valid markdown file provided to convert to PDF." + Fore.RESET
+        super().__init__(message)
+
+class LLMResponseFailedError(Exception):
+    def __init__(self, provider_name):
+        message = Fore.RED + f"[ERROR] Could not establish connection to LLM Provider '{provider_name}'." + Fore.RESET
+        super().__init__(message)

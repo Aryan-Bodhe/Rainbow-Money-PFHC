@@ -19,8 +19,7 @@ class UserProfile(BaseModel):
     liability_data: LiabilityData
     insurance_data: InsuranceData
 
-    metrics: Optional[PersonalFinanceMetrics] = None
-
+    target_retirement_corpus: Optional[float] = None
     years_to_retirement: Optional[int] = None
     total_monthly_income: Optional[float] = 0
     total_monthly_expense: Optional[float] = 0

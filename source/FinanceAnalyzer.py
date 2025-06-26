@@ -1,16 +1,17 @@
 from source.UserProfile import UserProfile
 from exceptions import UserProfileNotProvidedError, InvalidFinanceParameterError
 from source.Metrics import PersonalFinanceMetrics
+from config import ANNUAL_INFLATION_RATE, AVG_LIFE_EXPECTANCY, RETIREMENT_CORPUS_GROWTH_RATE
 
 class PersonalFinanceMetricsCalculator:
     def __init__(self):
         self.user_profile = None
-        self.total_monthly_income = None
-        self.total_monthly_expense = None
-        self.total_monthly_investments = None
-        self.total_monthly_emi = None
-        self.total_assets = None
-        self.total_liabilities = None
+        # self.total_monthly_income = None
+        # self.total_monthly_expense = None
+        # self.total_monthly_investments = None
+        # self.total_monthly_emi = None
+        # self.total_assets = None
+        # self.total_liabilities = None
 
 
     def analyze_user_profile(self, user_profile: UserProfile):
@@ -24,6 +25,7 @@ class PersonalFinanceMetricsCalculator:
         metrics.total_monthly_expense = self.user_profile.total_monthly_expense = self._compute_total_monthly_expense()
         metrics.total_monthly_income = self.user_profile.total_monthly_income = self._compute_total_monthly_income()
         metrics.total_monthly_investments = self.user_profile.total_monthly_investments = self._compute_total_monthly_investments()
+        metrics.target_retirement_corpus = self.user_profile.target_retirement_corpus = self._compute_target_retirement_corpus()
 
         functions = [            
             # compute ratios
@@ -174,7 +176,8 @@ class PersonalFinanceMetricsCalculator:
             self.user_profile.expense_data.housing_cost +
             self.user_profile.expense_data.utilities_and_bills +
             self.user_profile.expense_data.medical_insurance_premium +
-            self.user_profile.expense_data.term_insurance_premium
+            self.user_profile.expense_data.term_insurance_premium + 
+            self.user_profile.total_monthly_emi
         )
 
         return total
@@ -205,8 +208,8 @@ class PersonalFinanceMetricsCalculator:
                 raise UserProfileNotProvidedError()
             self._set_user_profile(user_profile=user_profile)
         
-        income = self.user_profile.total_monthly_income
         investment = self.user_profile.total_monthly_investments
+        income = self.user_profile.total_monthly_income
 
         try:
             investment_ratio = investment / income
@@ -253,7 +256,7 @@ class PersonalFinanceMetricsCalculator:
                 raise UserProfileNotProvidedError()
             self._set_user_profile(user_profile=user_profile)
         
-        liquid = self.user_profile.asset_data.total_savings_balance
+        liquid = self.user_profile.asset_data.total_savings_balance + self.user_profile.asset_data.total_debt_investments
         expense = self.user_profile.total_monthly_expense
 
         try:
@@ -268,8 +271,8 @@ class PersonalFinanceMetricsCalculator:
                 raise UserProfileNotProvidedError()
             self._set_user_profile(user_profile=user_profile)
         
-        liquid = self.user_profile.asset_data.total_savings_balance
-        emi = self.user_profile.total_monthly_emi
+        liquid = self.user_profile.asset_data.total_savings_balance + self.user_profile.asset_data.total_debt_investments
+        emi = self.user_profile.total_monthly_emi 
 
         try:
             liquidity_ratio = liquid / emi
@@ -352,20 +355,70 @@ class PersonalFinanceMetricsCalculator:
         except ZeroDivisionError:
             raise InvalidFinanceParameterError("Net Worth Adequacy", "Income")
         
+
+    def _compute_target_retirement_corpus(self, user_profile: UserProfile = None) -> float:
+        # Extract inputs
+        age_retire = self.user_profile.personal_data.expected_retirement_age
+        years_after = AVG_LIFE_EXPECTANCY - age_retire
+
+        # Current corpus and SIP
+        C0 = self.user_profile.asset_data.total_retirement_investments
+        annual_expense = self.user_profile.total_monthly_expense * 12
+
+        # Rates
+        r_nominal = RETIREMENT_CORPUS_GROWTH_RATE
+        r_inflation = ANNUAL_INFLATION_RATE
+
+        # 3) Required corpus at retirement to cover expenses for remaining years
+        T = years_after
+        if abs(r_nominal - r_inflation) < 1e-6:
+            # Special case: equal rates
+            required_corpus = annual_expense * T * (1 + r_inflation) ** (T - 1)
+        else:
+            required_corpus = annual_expense * ((1 + r_nominal) ** T - (1 + r_inflation) ** T) / (r_nominal - r_inflation)
+
+        return required_corpus
+
     def _compute_retirement_adequacy(self, user_profile: UserProfile = None) -> float:
+        # Load or set user profile
         if self.user_profile is None:
             if user_profile is None:
                 raise UserProfileNotProvidedError()
             self._set_user_profile(user_profile=user_profile)
-        
-        retirement_inv = self.user_profile.asset_data.total_retirement_investments
-        expected_inv = self.user_profile.total_monthly_income * self.user_profile.years_to_retirement * 12
 
+        required_corpus = self.user_profile.target_retirement_corpus
+
+        # Extract inputs
+        age_now = self.user_profile.personal_data.age
+        age_retire = self.user_profile.personal_data.expected_retirement_age
+        years_to_retire = age_retire - age_now
+
+        # Current corpus and SIP
+        C0 = self.user_profile.asset_data.total_retirement_investments
+        SIP_monthly = self.user_profile.asset_data.retirement_sip
+
+        # Rates
+        r_nominal = RETIREMENT_CORPUS_GROWTH_RATE
+        r_inflation = ANNUAL_INFLATION_RATE
+
+        # 1) Nominal projection to retirement
+        months = years_to_retire * 12
+        r_monthly = (1 + r_nominal) ** (1/12) - 1
+        corpus_nominal = C0 * (1 + r_nominal) ** years_to_retire
+        corpus_nominal += SIP_monthly * ((1 + r_monthly) ** months - 1) / r_monthly
+
+        # 2) Deflate nominal corpus to real at retirement
+        corpus_real = corpus_nominal / (1 + r_inflation) ** years_to_retire
+
+        # print('Simulated Corpus :', corpus_real)
+
+        # 4) Adequacy ratio
         try:
-            rta = retirement_inv / expected_inv
-            return rta
+            ratio = corpus_real / required_corpus
         except ZeroDivisionError:
-            raise InvalidFinanceParameterError("Retirement Adequacy", "Income")
+            raise InvalidFinanceParameterError("Retirement Adequacy", "Invalid rates leading to division by zero")
+
+        return ratio
         
     def _compute_asset_class_distribution(self, user_profile: UserProfile = None) -> dict:
         if self.user_profile is None:
@@ -389,3 +442,6 @@ class PersonalFinanceMetricsCalculator:
             return allocation
         except ZeroDivisionError:
             return InvalidFinanceParameterError("Asset Allocation", "Total Asset")
+
+    def _simulate_retirement_corpus_growth(self, user_profile: UserProfile = None):
+        ey = self.total_monthly_expense

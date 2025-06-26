@@ -22,6 +22,7 @@ class PersonalFinanceMetrics(BaseModel):
     health_insurance_adequacy: Optional[float] = 0
     term_insurance_adequacy: Optional[float] = 0
     net_worth_adequacy: Optional[float] = 0
+    target_retirement_corpus: Optional[float] = None
     retirement_adequacy: Optional[float] = 0
     
     asset_class_distribution: Optional[dict] = None

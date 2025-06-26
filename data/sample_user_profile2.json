@@ -1,0 +1,56 @@
+{
+  "personal_data": {
+    "age": 40,
+    "gender": "Male",
+    "city": "Delhi",
+    "risk_profile": "Moderate",
+    "expected_retirement_age": 65,
+    "marital_status": "Married",
+    "no_of_dependents": 1
+  },
+  "income_data": {
+    "salaried_income": 80000,
+    "business_income": 5000,
+    "freelance_income": 2000,
+    "investment_returns": 2000,
+    "rental_income": 5000
+  },
+  "expense_data": {
+    "housing_cost": 25000,
+    "utilities_and_bills": 7000,
+    "groceries_and_essentials": 9000,
+    "term_insurance_premium": 1500,
+    "medical_insurance_premium": 1000,
+    "discretionary_expense": 7000,
+    "property_tax": 10000,
+    "income_tax": 100000,
+    "total_deductions": 50000
+  },
+  "asset_data": {
+    "savings_balance": 100000,
+    "equity_sip": 3000,
+    "total_equity_investments": 50000,
+    "debt_sip": 2000,
+    "total_debt_investments": 20000,
+    "retirement_sip": 3000,
+    "total_retirement_investments": 100000,
+    "epf_ppf_elss_investments": 50000,
+    "total_real_estate_investments": 1000000
+  },
+  "liability_data": {
+    "credit_card_emi": 6000,
+    "outstanding_credit_card_balance": 40000,
+    "personal_loan_emi": 2000,
+    "outstanding_personal_loan_balance": 30000,
+    "car_loan_emi": 0,
+    "outstanding_car_loan_balance": 0,
+    "student_loan_emi": 1500,
+    "outstanding_student_loan_balance": 30000,
+    "home_loan_emi": 10000,
+    "outstanding_home_loan_balance": 500000
+  },
+  "insurance_data": {
+    "total_medical_cover": 300000,
+    "total_term_cover": 500000
+  }
+}

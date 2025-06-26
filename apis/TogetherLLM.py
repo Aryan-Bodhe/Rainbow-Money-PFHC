@@ -1,86 +1,93 @@
-import os
 import json
+import os
 import time
 from dotenv import load_dotenv
-from typing_extensions import Literal, Tuple
+from typing_extensions import Literal, Generator, Union, Tuple
 from colorama import Fore
+import asyncio
 
 from openai import OpenAI
 from config import LLM_TEMP
-from exceptions import InvalidJsonFormatError, LLMResponseFailedError
+from exceptions import InvalidJsonFormatError ,LLMResponseFailedError
 from apis.prompts.PromptTemplate import PROMPT_TEMPLATE
 from apis.prompts.ScoringPromptTemplate import SCORING_PROMPT_TEMPLATE
+from apis.prompts.RescorePromptTemplate import RESCORE_TEMPLATE
 
 load_dotenv()
 
-class OpenRouterLLM:
+class TogetherLLM:
     def __init__(
         self,
-        llm_model: Literal['Mistral_7B', 'Mistral_Small', 'Llama_3.2', 'DeepSeek_R1', 'Qwen_A3B', 'InternVL3', 'Nous_DeepHermes', 'Microsoft_Phi4', 'DeepSeek_V3', 'Nvidia_Nemotron', 'DeepSeek_R1_Qwen'],
+        llm_model: Literal['Llama_3.3_Instruct_Turbo', 'DeepSeek_R1_Dis_Llama', 'Llama_3.3_Instruct', 'LG_Exaone_3.5_Instruct'],
         temperature: float = LLM_TEMP,
     ):
         self.model_map = {
-            'DeepSeek_R1':      'deepseek/deepseek-r1-0528:free',
-            'DeepSeek_V3':      'deepseek/deepseek-chat-v3-0324:free',
-            'Microsoft_Phi4':   'microsoft/phi-4-reasoning-plus:free',
-            'Qwen_A3B':         'qwen/qwq-32b:free',
-            'InternVL3':        'opengvlab/internvl3-14b:free',
-            'Llama_3.2':        'meta-llama/llama-3.2-3b-instruct:free',
-            'Mistral_7B':       'mistralai/mistral-7b-instruct:free',
-            'Mistral_Small':    'mistralai/mistral-small-3.2-24b-instruct:free',
-            'Nous_DeepHermes':  'nousresearch/deephermes-3-llama-3-8b-preview:free',
-            'Nvidia_Nemotron':  'nvidia/llama-3.3-nemotron-super-49b-v1:free',
-            'DeepSeek_R1_Qwen': 'deepseek/deepseek-r1-0528-qwen3-8b:free'
+            'Llama_3.3_Instruct_Turbo':'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free',
+            'DeepSeek_R1_Dis_Llama':'deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free',
+            'Llama_3.3_Instruct':'nim/meta/llama-3.3-70b-instruct',
+            'LG_Exaone_3.5_Instruct':'lgai/exaone-3-5-32b-instruct'
         }
-        self.provider_name = 'OpenRouter'
-        self.fallback_models = ['Qwen_A3B', 'Llama_3.2', 'Mistral_7B']
+        
+        self.fallback_models = ['Llama_3.3_Instruct', 'Llama_3.3_Instruct_Turbo', 'LG_Exaone_3.5_Instruct']
 
-        self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        self.provider_name = 'Together.ai'
         self.temperature = temperature
-        self.model_name = llm_model
         self.model = self.model_map.get(llm_model)
+        self.model_name = llm_model
         self.client = OpenAI(
-            api_key=self.openrouter_api_key,
-            base_url="https://openrouter.ai/api/v1"
+            api_key=os.getenv('TOGETHER_API_KEY'),
+            base_url='https://api.together.xyz/v1'
         )
 
-    def generate_weights_using_llm(self, personal_data: str, enable_testing: Literal[True, False] = True):
-        prompt_text = self._format_scoring_template(SCORING_PROMPT_TEMPLATE, personal_data, '')
-        return self.get_model_response(prompt_text, enable_testing)
 
-    def get_model_response(
+    async def generate_weights_using_llm(self, personal_data: str):
+        prompt_text = self._format_scoring_template(SCORING_PROMPT_TEMPLATE, personal_data, '')
+        return await self.get_model_response(prompt_text)
+        
+
+    async def get_model_response(
         self,
         prompt_text: str,
-        enable_testing: bool = False
-    ) -> Tuple[str, dict]:
+    ) -> dict:
+        
+        loop = asyncio.get_running_loop()
 
         fallback_models = self.fallback_models[:]
-        if self.model_name in fallback_models:
+        if self.model in fallback_models:
             fallback_models.remove(self.model_name)
 
         retry = 0
         while retry < len(fallback_models):
             try:
                 response_time_start = time.perf_counter()
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[{"role": "user", "content": prompt_text}],
-                    temperature=self.temperature or LLM_TEMP,
+
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": prompt_text}],
+                        temperature=self.temperature or LLM_TEMP,
+                    )
                 )
+
                 response_time_end = time.perf_counter()
 
                 output = response.choices[0].message.content
                 output = self._parse_llm_output(output)
                 output = self._post_process_weights(output)
+                token_data = {
+                    'prompt_tokens':response.usage.prompt_tokens,
+                    'response_tokens': response.usage.completion_tokens,
+                    'total_tokens': response.usage.total_tokens
+                }
 
-                token_data = response['usage']
                 perf_data = {
                     "total_response_time": round(response_time_end - response_time_start, 4),
                     "total_tokens": token_data
                 }
 
-                return {'response': output, 'llm_perf_data': perf_data}
-
+                return {'output': output, 'perf_data': perf_data}
+            
             except Exception as e:
                 new_model = fallback_models[retry]
                 print(Fore.RED+f"[ERROR] API Response failed for LLM '{self.model_name}'. Retrying using LLM '{new_model}'.")
@@ -89,41 +96,53 @@ class OpenRouterLLM:
                 retry += 1
                 self._set_llm_model(new_model)
 
-        raise LLMResponseFailedError()
+        raise LLMResponseFailedError(self.provider_name)
+
 
     def _post_process_weights(self, raw_weights: dict):
         if sum(raw_weights.values()) == 100:
             return raw_weights
+        
+        # 1) Clip & normalize
         clipped = {k: max(0, v) for k, v in raw_weights.items()}
-        total = sum(clipped.values()) or 1
-        scaled = {k: v / total * 100 for k, v in clipped.items()}
-        floors = {k: int(v) for k, v in scaled.items()}
+        total   = sum(clipped.values()) or 1
+        scaled  = {k: v/total*100 for k, v in clipped.items()}
+        # 2) Floor + compute remainders
+        floors   = {k: int(v) for k, v in scaled.items()}
         remainders = {k: scaled[k] - floors[k] for k in scaled}
-        shortfall = 100 - sum(floors.values())
+        shortfall  = 100 - sum(floors.values())
+        # 3) Distribute remaining points
         for k in sorted(remainders, key=remainders.get, reverse=True)[:shortfall]:
             floors[k] += 1
         return floors
-
-    def _parse_llm_output(self, json_str: str) -> str:
+    
+    def _parse_llm_output(self, json_str: str) -> dict:
+        # 2) Strip any triple-backticks or think tags
         clean = json_str
         if clean.startswith('```'):
             clean = clean.replace('```json', '').replace('```', '')
+
+        # strip think section if exists
         if clean.startswith('<think>'):
             clean = clean.split('</think>')[1]
             first_brace = clean.find('{')
             if first_brace != -1:
                 clean = clean[first_brace:]
+
+        # 3) Parse to dict
         try:
             weights = json.loads(clean)
             return weights
         except json.JSONDecodeError:
             raise InvalidJsonFormatError(var='weights')
 
-    def _format_scoring_template(self, template: str, personal_data: str, derived_metrics: str):
+
+    def _format_scoring_template(self, template: str, personal_data: str, derived_metrics:str):
         try:
             return template.format(personal_data=personal_data, derived_metrics=derived_metrics)
         except KeyError as e:
             raise ValueError(f"Missing variable for prompt template: {e}")
+        
 
     def _is_valid_json(self, json_str: str) -> bool:
         try:
@@ -132,16 +151,16 @@ class OpenRouterLLM:
         except Exception:
             return False
 
+
     def _set_llm_model(
         self,
         model: Literal[
-            'Mistral_7B', 'Mistral_Small', 'Llama_3.2', 'DeepSeek_R1',
-            'Qwen_A3B', 'InternVL3', 'Nous_DeepHermes', 'Microsoft_Phi4',
-            'DeepSeek_V3', 'Nvidia_Nemotron', 'DeepSeek_R1_Qwen'
-        ] = 'Mistral_7B'
+            'Llama_3.3_Instruct_Turbo', 'DeepSeek_R1_Dis_Llama', 'Llama_3.3_Instruct', 'LG_Exaone_3.5_Instruct'
+        ] = 'LG_Exaone_3.5_Instruct'
     ):
+
         chosen = self.model_map.get(model)
         if not chosen:
-            chosen = self.model_map['Mistral_7B']
+            # fallback to default if somehow model not in map
+            chosen = self.model_map['LG_Exaone_3.5_Instruct']
         self.model = chosen
-        self.model_name = model
