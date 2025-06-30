@@ -1,0 +1,74 @@
+<h1>Personal Finance Health Report</h1>
+
+<h2>A. Overall Profile Review</h2>
+<p>{{ overall_profile_review }}</p>
+
+<h2>B. Commendable Areas</h2>
+{% if commendable_areas and commendable_areas|length > 0 %}
+  <ol>
+  {% for area in commendable_areas %}
+    <li>
+      <strong>{{ area.header }}</strong><br>
+      <div style="margin-left: 1.5em;">{{ area.content }}</div>
+    </li>
+  {% endfor %}
+  </ol>
+{% else %}
+  <blockquote>No particularly strong positive areas to highlight.</blockquote>
+{% endif %}
+
+<h2>C. Areas for Improvement</h2>
+{% if areas_for_improvement and areas_for_improvement|length > 0 %}
+  <ol>
+  {% for item in areas_for_improvement %}
+    <li>
+      <strong>{{ item.header }}</strong><br>
+      <div style="margin-left: 0.5em;">
+        <ul>
+          <li><p>Current Scenario: {{ item.current_scenario }}</p></li>
+          <li><p>Actionable: {{ item.actionable }}</p></li>
+        </ul>
+      </div>
+    </li>
+  {% endfor %}
+  </ol>
+{% else %}
+  <blockquote><em>No immediate areas for improvement detected.</em></blockquote>
+{% endif %}
+
+<h2>D. Summary</h2>
+<p>{{ summary }}</p>
+
+<h2>E. Appendix</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Metric</th>
+      <th>Weight Assigned</th>
+      <th>Benchmark Value</th>
+      <th>User Value</th>
+      <th>Points Awarded</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in appendix %}
+      {% if row.metric|trim|lower == 'total' %}
+      <tr>
+        <td><strong>{{ row.metric }}</strong></td>
+        <td><strong>{{ row.weight }}</strong></td>
+        <td><strong>{{ row.benchmark }}</strong></td>
+        <td><strong>{{ row.user_value }}</strong></td>
+        <td><strong>{{ row.points_awarded }}</strong></td>
+      </tr>
+      {% else %}
+      <tr>
+        <td>{{ row.metric }}</td>
+        <td>{{ row.weight }}</td>
+        <td>{{ row.benchmark }}</td>
+        <td>{{ row.user_value }}</td>
+        <td>{{ row.points_awarded }}</td>
+      </tr>
+      {% endif %}
+    {% endfor %}
+  </tbody>
+</table>

@@ -1,7 +1,6 @@
-# from dataclasses import dataclass, field
 from typing_extensions import Optional
 from pydantic import BaseModel
-# @dataclass
+
 class PersonalFinanceMetrics(BaseModel):
     total_monthly_income: Optional[float] = 0
     total_monthly_expense: Optional[float] = 0
@@ -26,3 +25,4 @@ class PersonalFinanceMetrics(BaseModel):
     retirement_adequacy: Optional[float] = 0
     
     asset_class_distribution: Optional[dict] = None
+    city_tier: Optional[int] = None

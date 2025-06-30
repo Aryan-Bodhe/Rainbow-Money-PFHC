@@ -1,17 +1,12 @@
-from source.UserProfile import UserProfile
-from exceptions import UserProfileNotProvidedError, InvalidFinanceParameterError
-from source.Metrics import PersonalFinanceMetrics
-from config import ANNUAL_INFLATION_RATE, AVG_LIFE_EXPECTANCY, RETIREMENT_CORPUS_GROWTH_RATE
+from core.exceptions import UserProfileNotProvidedError, InvalidFinanceParameterError
+from config.config import ANNUAL_INFLATION_RATE, AVG_LIFE_EXPECTANCY, RETIREMENT_CORPUS_GROWTH_RATE
+from models.UserProfile import UserProfile
+from models.DerivedMetrics import PersonalFinanceMetrics
+from .user_segment_classifier import classify_city_tier
 
 class PersonalFinanceMetricsCalculator:
     def __init__(self):
         self.user_profile = None
-        # self.total_monthly_income = None
-        # self.total_monthly_expense = None
-        # self.total_monthly_investments = None
-        # self.total_monthly_emi = None
-        # self.total_assets = None
-        # self.total_liabilities = None
 
 
     def analyze_user_profile(self, user_profile: UserProfile):
@@ -26,6 +21,7 @@ class PersonalFinanceMetricsCalculator:
         metrics.total_monthly_income = self.user_profile.total_monthly_income = self._compute_total_monthly_income()
         metrics.total_monthly_investments = self.user_profile.total_monthly_investments = self._compute_total_monthly_investments()
         metrics.target_retirement_corpus = self.user_profile.target_retirement_corpus = self._compute_target_retirement_corpus()
+        metrics.city_tier = classify_city_tier(user_profile.personal_data.city)
 
         functions = [            
             # compute ratios
@@ -443,5 +439,5 @@ class PersonalFinanceMetricsCalculator:
         except ZeroDivisionError:
             return InvalidFinanceParameterError("Asset Allocation", "Total Asset")
 
-    def _simulate_retirement_corpus_growth(self, user_profile: UserProfile = None):
-        ey = self.total_monthly_expense
+    # def _simulate_retirement_corpus_growth(self, user_profile: UserProfile = None):
+    #     ey = self.total_monthly_expense

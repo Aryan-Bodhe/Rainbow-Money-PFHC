@@ -1,6 +1,5 @@
-# from dataclasses import dataclass
 from pydantic import BaseModel
-# @dataclass
+
 class LiabilityData(BaseModel):
     credit_card_emi: int
     personal_loan_emi: int

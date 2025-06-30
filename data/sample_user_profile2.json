@@ -27,7 +27,7 @@
     "total_deductions": 50000
   },
   "asset_data": {
-    "savings_balance": 100000,
+    "total_savings_balance": 100000,
     "equity_sip": 3000,
     "total_equity_investments": 50000,
     "debt_sip": 2000,

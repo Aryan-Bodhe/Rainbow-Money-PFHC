@@ -1,6 +1,5 @@
-# from dataclasses import dataclass
 from pydantic import BaseModel
-# @dataclass
+
 class IncomeData(BaseModel):
     salaried_income: int
     business_income: int

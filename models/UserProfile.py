@@ -1,14 +1,12 @@
-# from dataclasses import dataclass, field
 from typing_extensions import Optional
 from pydantic import BaseModel
 
-from source.PersonalData import PersonalData
-from source.IncomeData import IncomeData
-from source.ExpenseData import ExpenseData
-from source.AssetData import AssetData
-from source.LiabilityData import LiabilityData
-from source.InsuranceData import InsuranceData
-from source.Metrics import PersonalFinanceMetrics
+from .PersonalData import PersonalData
+from .IncomeData import IncomeData
+from .ExpenseData import ExpenseData
+from .AssetData import AssetData
+from .LiabilityData import LiabilityData
+from .InsuranceData import InsuranceData
 
 # @dataclass
 class UserProfile(BaseModel):

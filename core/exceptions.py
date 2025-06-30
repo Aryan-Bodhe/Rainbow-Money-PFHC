@@ -9,9 +9,7 @@ class InvalidFinanceParameterError(Exception):
         super().__init__(message)
 
 class InvalidJsonFormatError(Exception):
-    def __init__(self, var:str):
-        message = Fore.RED + f"[ERROR] Expected {var} to be JSON style-string." + Fore.RESET
-        super().__init__(message)
+    ...
 
 class NoMarkdownFileToConvertToPDFError(Exception):
     def __init__(self):
@@ -20,5 +18,5 @@ class NoMarkdownFileToConvertToPDFError(Exception):
 
 class LLMResponseFailedError(Exception):
     def __init__(self, provider_name):
-        message = Fore.RED + f"[ERROR] Could not establish connection to LLM Provider '{provider_name}'." + Fore.RESET
+        message = Fore.RED + f"[ERROR] Failed to get valid response from '{provider_name}'." + Fore.RESET
         super().__init__(message)

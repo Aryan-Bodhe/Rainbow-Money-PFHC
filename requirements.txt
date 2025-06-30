@@ -23,8 +23,10 @@ httpcore==0.17.3
 httpx==0.24.1
 idna==3.10
 importlib-metadata==6.7.0
+Jinja2==3.1.6
 Markdown==3.4.4
 markdown-it-py==2.2.0
+MarkupSafe==3.0.2
 mdurl==0.1.2
 multidict==6.0.5
 openai==1.39.0

@@ -11,8 +11,10 @@ PROFILE_3_PATH = 'data/sample_user_profile3.json'
 USER_PROFILE_DATA_PATH = PROFILE_1_PATH
 METRICS_OUTPUT_PATH = 'temp/output_metrics.json'
 REPORT_PATH = 'temp/personal_finance_health_report.pdf'
-REPORT_STYLESHEET = 'apis/markdown_pdf_style.css'
+REPORT_STYLESHEET = 'templates/pdf_templates/pdf_formatting.css'
 LLM_OUTPUT_PATH = 'temp/llm_output.md'
+REPORT_TEMPLATE_NAME = 'report_template.j2'
+REPORT_TEMPLATE_DIR = 'templates/pdf_templates/'
 
 ANNUAL_INFLATION_RATE = 0.05
 RETIREMENT_CORPUS_GROWTH_RATE = 0.08

@@ -2,7 +2,7 @@
    Base page setup
    ------------------------------------------------------------------ */
 @page {
-  margin: 1.5cm;
+  margin: 1cm;
 }
 body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -23,7 +23,7 @@ h1 {
 
 h2 {
   font-size: 24px;
-  color: #0b3d91;
+  color: #0c2e6a;
   margin-top: 1em;
   margin-bottom: 0.3em;
   border-bottom: 1px solid #cccccc;
@@ -32,7 +32,7 @@ h2 {
 
 h3 {
   font-size: 18px;
-  color: #0b3d91;
+  color: #0c2e6a;
   margin-top: 0.8em;
   margin-bottom: 0.2em;
 }
@@ -44,11 +44,26 @@ p {
   margin: 0.5em 0;
 }
 
-ul, ol {
-  margin: 0.5em 0 0.5em 1.2em;
+/* Ordered lists (numbered) */
+ol {
+  margin-left: 0;
+  padding-left: 1.6em; /* Controls space from left edge to numbers */
 }
-li {
-  margin-bottom: 0.3em;
+
+/* List items inside <ol> */
+ol > li {
+  margin-bottom: 0.8em; /* Space between top-level numbered items */
+}
+
+/* Unordered lists (bullets) — any <ul> */
+ul {
+  margin-left: 0;
+  padding-left: 0.4em; /* Smaller indent for bullet lists */
+}
+
+/* List items inside <ul> */
+ul > li {
+  margin-bottom: 0.4em; /* Optional: vertical spacing between bullet points */
 }
 
 /* ------------------------------------------------------------------

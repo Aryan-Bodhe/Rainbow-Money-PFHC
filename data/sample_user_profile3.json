@@ -3,7 +3,7 @@
     "age": 30,
     "gender": "Female",
     "city": "Pune",
-    "risk_profile": "Low",
+    "risk_profile": "Conservative",
     "expected_retirement_age": 60,
     "marital_status": "Married",
     "no_of_dependents": 2
@@ -27,7 +27,7 @@
     "total_deductions": 0
   },
   "asset_data": {
-    "savings_balance": 10000,
+    "total_savings_balance": 10000,
     "equity_sip": 1000,
     "total_equity_investments": 5000,
     "debt_sip": 2000,
@@ -39,14 +39,14 @@
   },
   "liability_data": {
     "credit_card_emi": 2000,
-    "outstanding_credit_card_balance": 50000,
     "personal_loan_emi": 3000,
-    "outstanding_personal_loan_balance": 80000,
     "car_loan_emi": 0,
-    "outstanding_car_loan_balance": 0,
     "student_loan_emi": 1000,
-    "outstanding_student_loan_balance": 40000,
     "home_loan_emi": 0,
+    "outstanding_credit_card_balance": 50000,
+    "outstanding_personal_loan_balance": 80000,
+    "outstanding_car_loan_balance": 0,
+    "outstanding_student_loan_balance": 40000,
     "outstanding_home_loan_balance": 0
   },
   "insurance_data": {

@@ -1,4 +1,3 @@
-# from dataclasses import dataclass
 from pydantic import BaseModel
 
 class AssetData(BaseModel):

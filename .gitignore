@@ -1,5 +1,6 @@
 .env
-env3.7/
 env310/
 Other/
 temp/*
+_trash_
+_etc_
