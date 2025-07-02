@@ -9,9 +9,8 @@ import asyncio
 from openai import OpenAI
 from config.config import LLM_TEMP
 from core.exceptions import LLMResponseFailedError, InvalidJsonFormatError
-from utils.response_parsing import parse_llm_output, post_process_weights
-from utils.data_validation import is_valid_json
-from templates.prompt_templates.WeightsGenerationTemplate import WEIGHT_GEN_SYS_MSG, WEIGHTS_GEN_USER_MSG
+from utils.response_parsing import parse_llm_output
+from templates.prompt_templates.weights_generation_template import WEIGHT_GEN_SYS_MSG, WEIGHTS_GEN_USER_MSG
 from templates.prompt_templates.ReportGenerationTemplate import REPORT_GEN_SYS_MSG, REPORT_GEN_USER_MSG
 
 load_dotenv()
@@ -19,16 +18,16 @@ load_dotenv()
 class TogetherLLM:
     def __init__(
         self,
-        llm_model: Literal['DeepSeek_R1_Distilled', 'Llama_3.3_Instruct', 'LG_Exaone_3.5_Instruct'],
+        llm_model: Literal['DeepSeek_R1_Distilled', 'Llama_3.3_Instruct_Turbo', 'LG_Exaone_3.5_Instruct'],
         temperature: float = LLM_TEMP,
     ):
         self.model_map = {
             'DeepSeek_R1_Distilled':'deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free',
-            'Llama_3.3_Instruct':'nim/meta/llama-3.3-70b-instruct',
-            'LG_Exaone_3.5_Instruct':'lgai/exaone-3-5-32b-instruct'
+            'Llama_3.3_Instruct_Turbo':'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free', # does not work
+            'LG_Exaone_3.5_Instruct':'lgai/exaone-3-5-32b-instruct' # not free?
         }
         
-        self.fallback_models = ['Llama_3.3_Instruct', 'LG_Exaone_3.5_Instruct']
+        self.fallback_models = ['Llama_3.3_Instruct_Turbo', 'LG_Exaone_3.5_Instruct']
 
         self.provider_name = 'Together.ai'
         self.temperature = temperature
@@ -39,21 +38,28 @@ class TogetherLLM:
             base_url='https://api.together.xyz/v1'
         )
 
+    async def generate_report_part(self, system_msg: str, user_msg: str, advanced = Literal[True, False], **kwargs):
+        """
+            Requires personal_data, derived_metrics, benchmark_data
+        """
+        user_message = self.format_any_prompt_template(user_msg, **kwargs)
+        return await self.get_model_response(system_msg, user_message, advanced)
 
     async def generate_report_using_llm(self, personal_data: str, derived_metrics: str, benchmark_data: str):
         user_message = self._format_report_gen_template(REPORT_GEN_USER_MSG, personal_data, derived_metrics, benchmark_data)
         return await self.get_model_response(REPORT_GEN_SYS_MSG, user_message)
 
 
-    async def generate_weights_using_llm(self, personal_data: str):
+    async def generate_weights_using_llm(self, personal_data: str, advanced = Literal[True, False]):
         user_message = self._format_scoring_template(WEIGHTS_GEN_USER_MSG, personal_data)
-        return await self.get_model_response(WEIGHT_GEN_SYS_MSG, user_message)
+        return await self.get_model_response(WEIGHT_GEN_SYS_MSG, user_message, advanced)
         
 
     async def get_model_response(
         self,
         system_message: str,
-        user_message: str
+        user_message: str,
+        advanced: Literal[True, False] = True,
     ) -> dict:
         
         loop = asyncio.get_running_loop()
@@ -67,19 +73,32 @@ class TogetherLLM:
             print(f"--> Attempting response with model: {self.model_name}.")
             try:
                 response_time_start = time.perf_counter()
-
-                response = await loop.run_in_executor(
-                    None,
-                    lambda: self.client.chat.completions.create(
-                        model=self.model,
-                        messages=[
-                            {"role": "system", "content": system_message},
-                            {"role": "user", "content": user_message}
-                        ],
-                        temperature=self.temperature or LLM_TEMP,
-                        response_format='json'
+                
+                if advanced:
+                    response = await loop.run_in_executor(
+                        None,
+                        lambda: self.client.chat.completions.create(
+                            model=self.model,
+                            messages=[
+                                {"role": "system", "content": system_message},
+                                {"role": "user", "content": user_message}
+                            ],
+                            temperature=self.temperature or LLM_TEMP,
+                            response_format='json'
+                        )
                     )
-                )
+                else:
+                    response = await loop.run_in_executor(
+                        None,
+                        lambda: self.client.chat.completions.create(
+                            model=self.model,
+                            messages=[
+                                {"role": "system", "content": system_message},
+                                {"role": "user", "content": user_message}
+                            ],
+                            temperature=self.temperature or LLM_TEMP,
+                        )
+                    )
 
                 response_time_end = time.perf_counter()
 
@@ -105,7 +124,7 @@ class TogetherLLM:
             
             except InvalidJsonFormatError:
                 print(f"--> Malformed JSON output: {self.model_name}")
-                print(output)
+                # print(output)
                 retry += 1
                 continue
             
@@ -127,6 +146,13 @@ class TogetherLLM:
             raise ValueError(f"Missing variable for prompt template: {e}")
         
 
+    def format_any_prompt_template(self, template: str, **kwargs) -> str:
+        try:
+            return template.format(**kwargs)
+        except KeyError as e:
+            raise ValueError(f"Missing variable for prompt template: {e}")
+
+
     def _format_scoring_template(self, template: str, personal_data: str) -> str:
         try:
             return template.format(personal_data=personal_data)
@@ -137,7 +163,7 @@ class TogetherLLM:
     def _set_llm_model(
         self,
         model: Literal[
-            'DeepSeek_R1_Distilled', 'Llama_3.3_Instruct', 'LG_Exaone_3.5_Instruct'
+            'DeepSeek_R1_Distilled', 'Llama_3.3_Instruct_Turbo', 'LG_Exaone_3.5_Instruct'
         ] = 'LG_Exaone_3.5_Instruct'
     ):
 
@@ -146,3 +172,4 @@ class TogetherLLM:
             # fallback to default if somehow model not in map
             chosen = self.model_map['LG_Exaone_3.5_Instruct']
         self.model = chosen
+        self.model_name = model

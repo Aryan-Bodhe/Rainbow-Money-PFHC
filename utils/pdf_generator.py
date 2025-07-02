@@ -1,9 +1,12 @@
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import HTML
+import json
 from markdown import markdown
 
 from core.exceptions import NoMarkdownFileToConvertToPDFError
 from config.config import REPORT_PATH, REPORT_STYLESHEET, REPORT_TEMPLATE_DIR
+GLOSSARY_PATH = 'assets/glossary.json'
+
 
 class PDFGenerator:
     def __init__(self, template: str = REPORT_TEMPLATE_DIR):
@@ -60,8 +63,15 @@ class PDFGenerator:
 
     
     def generate_context_data(self, report_data: dict, analyzed_metrics_table: dict):
+        report_data['glossary'] = self.get_glossary_data()
         report_data['appendix'] = analyzed_metrics_table
         return report_data
+    
+    
+    def get_glossary_data(self, glossary_data_path: str = GLOSSARY_PATH):
+        with open(glossary_data_path, 'r') as file:
+            glossary_data = json.load(file)        
+        return glossary_data
 
 
     def get_metrics_summary_table_dict(

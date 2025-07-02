@@ -1,0 +1,53 @@
+{
+  "personal_data": {
+    "age": 38,
+    "gender": "Female",
+    "city": "Patna",
+    "risk_profile": "Aggressive",
+    "expected_retirement_age": 70,
+    "marital_status": "Unmarried",
+    "no_of_dependents": 3
+  },
+  "income_data": {
+    "salaried_income": 15000,
+    "business_income": 5000,
+    "freelance_income": 3000,
+    "investment_returns": 500,
+    "rental_income": 0
+  },
+  "expense_data": {
+    "housing_cost": 8000,
+    "utilities_and_bills": 3000,
+    "groceries_and_essentials": 7000,
+    "term_insurance_premium": 0,
+    "medical_insurance_premium": 0,
+    "discretionary_expense": 2000
+  },
+  "asset_data": {
+    "equity_sip": 0,
+    "debt_sip": 0,
+    "retirement_sip": 0,
+    "total_savings_balance": 8000,
+    "total_emergency_fund": 0,
+    "total_equity_investments": 0,
+    "total_debt_investments": 0,
+    "total_retirement_investments": 0,
+    "total_real_estate_investments": 0
+  },
+  "liability_data": {
+    "credit_card_emi": 5000,
+    "personal_loan_emi": 7000,
+    "car_loan_emi": 0,
+    "student_loan_emi": 0,
+    "home_loan_emi": 0,
+    "outstanding_credit_card_balance": 150000,
+    "outstanding_personal_loan_balance": 300000,
+    "outstanding_car_loan_balance": 0,
+    "outstanding_student_loan_balance": 0,
+    "outstanding_home_loan_balance": 0
+  },
+  "insurance_data": {
+    "total_medical_cover": 0,
+    "total_term_cover": 0
+  }
+}

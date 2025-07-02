@@ -10,7 +10,7 @@ from openai import OpenAI
 from config.config import LLM_TEMP
 from core.exceptions import LLMResponseFailedError, InvalidJsonFormatError
 from utils.response_parsing import parse_llm_output
-from templates.prompt_templates.WeightsGenerationTemplate import WEIGHT_GEN_SYS_MSG, WEIGHTS_GEN_USER_MSG
+from templates.prompt_templates.weights_generation_template import WEIGHT_GEN_SYS_MSG, WEIGHTS_GEN_USER_MSG
 from templates.prompt_templates.ReportGenerationTemplate import REPORT_GEN_SYS_MSG, REPORT_GEN_USER_MSG
 
 load_dotenv()
@@ -25,6 +25,7 @@ class OpenRouterLLM:
         ],
         temperature: float = LLM_TEMP,
     ):
+        # map your friendly names → OpenRouter model identifiers
         self.model_map = {
             'DeepSeek_R1':      'deepseek/deepseek-r1-0528:free',
             'DeepSeek_V3':      'deepseek/deepseek-chat-v3-0324:free',
@@ -50,6 +51,17 @@ class OpenRouterLLM:
             base_url="https://openrouter.ai/api/v1"
         )
 
+    async def generate_report_part(
+        self,
+        system_msg: str,
+        user_msg: str,
+        **kwargs
+    ) -> dict:
+        """
+        A single section of the report (e.g. profile review, commendables, etc.).
+        """
+        user_message = self.format_any_prompt_template(user_msg, **kwargs)
+        return await self.get_model_response(system_msg, user_message)
 
     async def generate_report_using_llm(
         self,
@@ -58,7 +70,7 @@ class OpenRouterLLM:
         benchmark_data: str
     ) -> dict:
         """
-        Mirrors TogetherLLM.generate_report_using_llm
+        One-shot full-report generation.
         """
         user_message = self._format_report_gen_template(
             REPORT_GEN_USER_MSG,
@@ -68,30 +80,32 @@ class OpenRouterLLM:
         )
         return await self.get_model_response(REPORT_GEN_SYS_MSG, user_message)
 
-
     async def generate_weights_using_llm(
         self,
         personal_data: str
     ) -> dict:
         """
-        Mirrors TogetherLLM.generate_weights_using_llm
+        Ask the model to assign weights.
         """
         user_message = self._format_scoring_template(
             WEIGHTS_GEN_USER_MSG,
             personal_data
         )
         return await self.get_model_response(WEIGHT_GEN_SYS_MSG, user_message)
-    
 
-    async def get_model_response(self, system_message:str, user_message: str) -> dict:
+    async def get_model_response(
+        self,
+        system_message: str,
+        user_message: str
+    ) -> dict:
         """
-        Attempts to get a valid response from the primary model, with fallback logic.
+        Core async call with fallback. Sends [system, user] messages and expects JSON.
         """
         fallback = [m for m in self.fallback_models if m != self.model_name]
         loop = asyncio.get_running_loop()
         retries = 0
 
-        while retries < 3:
+        while retries < len(fallback) + 1:
             print(f"--> Attempting response with model {self.model_name}")
             try:
                 t_start = time.perf_counter()
@@ -102,7 +116,7 @@ class OpenRouterLLM:
                         model=self.model,
                         messages=[
                             {"role": "system", "content": system_message},
-                            {"role": "user", "content": user_message}
+                            {"role": "user",   "content": user_message}
                         ],
                         temperature=self.temperature or LLM_TEMP,
                         response_format='json'
@@ -112,7 +126,8 @@ class OpenRouterLLM:
                 t_end = time.perf_counter()
                 raw = response.choices[0].message.content
 
-                final = parse_llm_output(raw)
+                # parse + validate JSON
+                parsed = parse_llm_output(raw)
 
                 usage = response.usage
                 perf_data = {
@@ -124,25 +139,24 @@ class OpenRouterLLM:
                     }
                 }
 
-                return {"response": final, "perf_data": perf_data}
+                return {"response": parsed, "perf_data": perf_data}
 
             except InvalidJsonFormatError:
-                print(f"--> Malformed JSON output: {self.model_name}")
-                print(response)
+                print(f"--> Malformed JSON output from {self.model_name}, retrying...")
                 retries += 1
+                continue
 
             except Exception as e:
-                
                 print(Fore.RED + f"[ERROR] '{self.model_name}' failed." + Fore.RESET)
                 print(f"Reason: {e}\n")
                 if retries >= len(fallback):
                     break
+                # switch to next fallback
                 new_model = fallback[retries]
                 self._set_llm_model(new_model)
                 retries += 1
 
         raise LLMResponseFailedError(self.provider_name)
-
 
     def _format_report_gen_template(
         self,
@@ -160,6 +174,15 @@ class OpenRouterLLM:
         except KeyError as e:
             raise ValueError(f"Missing variable for prompt template: {e}")
 
+    def format_any_prompt_template(
+        self,
+        template: str,
+        **kwargs
+    ) -> str:
+        try:
+            return template.format(**kwargs)
+        except KeyError as e:
+            raise ValueError(f"Missing variable for prompt template: {e}")
 
     def _format_scoring_template(
         self,
@@ -171,14 +194,13 @@ class OpenRouterLLM:
         except KeyError as e:
             raise ValueError(f"Missing variable for prompt template: {e}")
 
-
     def _set_llm_model(
         self,
         model: Literal[
             'Mistral_7B', 'Mistral_Small', 'Llama_3.2', 'DeepSeek_R1',
             'Qwen_A3B', 'InternVL3', 'Nous_DeepHermes', 'Microsoft_Phi4',
             'DeepSeek_V3', 'Nvidia_Nemotron', 'DeepSeek_R1_Qwen'
-        ] = 'Mistral_7B'
+        ]
     ):
         """
         Update both human-readable and actual model identifier.

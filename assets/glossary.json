@@ -1,0 +1,80 @@
+{
+  "savings_income_ratio": {
+    "term": "Savings-Income Ratio",
+    "definition": "The portion of your income you save after covering expenses and investments.",
+    "formula": "(Income − Expenses − EMIs − Investments) ÷ Income",
+    "significance": "Shows how disciplined you are at setting aside money for the future."
+  },
+  "investment_income_ratio": {
+    "term": "Investment-Income Ratio",
+    "definition": "The share of your income that goes directly into investments each month.",
+    "formula": "Investments ÷ Income",
+    "significance": "Highlights how much of your earnings you're using to build wealth."
+  },
+  "expense_income_ratio": {
+    "term": "Expense-Income Ratio",
+    "definition": "The fraction of your income used for everyday expenses.",
+    "formula": "Expenses ÷ Income",
+    "significance": "Helps you understand living cost pressure relative to earnings."
+  },
+  "debt_income_ratio": {
+    "term": "Debt to Income Ratio",
+    "definition": "The share of your income consumed by loan repayments.",
+    "formula": "EMIs ÷ Income",
+    "significance": "Shows how much of your earnings are committed to debt repayment."
+  },
+  "emergency_fund_ratio": {
+    "term": "Emergency Fund Coverage",
+    "definition": "The number of months your liquid savings can cover your expenses.",
+    "formula": "Liquid Assets ÷ Monthly Expenses",
+    "significance": "Ensures you have a cushion in case of unexpected financial shocks."
+  },
+  "liquidity_ratio": {
+    "term": "Liquidity Coverage",
+    "definition": "How many months you can live on cash and easily sold assets.",
+    "formula": "(Cash + Savings + Other Liquid Assets) ÷ Monthly Expenses",
+    "significance": "Measures short‑term financial resilience."
+  },
+  "asset_liability_ratio": {
+    "term": "Asset‑to‑Liability Ratio",
+    "definition": "Compares your total assets to total liabilities.",
+    "formula": "Total Assets ÷ Total Liabilities",
+    "significance": "Indicates overall financial stability and cushion."
+  },
+  "housing_income_ratio": {
+    "term": "Housing Cost Ratio",
+    "definition": "The percentage of your income spent on housing (rent or mortgage).",
+    "formula": "Housing Payments ÷ Income",
+    "significance": "Helps ensure your housing remains affordable."
+  },
+  "health_insurance_adequacy": {
+    "term": "Health Cover Adequacy",
+    "definition": "How well your health insurance meets typical medical cost benchmarks.",
+    "formula": "Actual Coverage ÷ Recommended Coverage",
+    "significance": "Ensures you're protected against major health expenses."
+  },
+  "term_insurance_adequacy": {
+    "term": "Term Cover Adequacy",
+    "definition": "How well your term insurance meets the needs of your dependents.",
+    "formula": "Actual Coverage ÷ Recommended Coverage",
+    "significance": "Provides financial security to your family in case of untimely death."
+  },
+  "net_worth_adequacy": {
+    "term": "Net Worth Ratio",
+    "definition": "Your net worth compared to your annual income.",
+    "formula": "(Assets − Liabilities) ÷ (Income × 12)",
+    "significance": "Shows wealth accumulation relative to earnings."
+  },
+  "target_retirement_corpus": {
+    "term": "Retirement Target Corpus",
+    "definition": "The amount you need to save by retirement to maintain your lifestyle.",
+    "formula": "Computed by considering inflation, estimated retirement returns, and expected monthly expenses.",
+    "significance": "Sets the savings target for a comfortable post‑work life."
+  },
+  "retirement_adequacy": {
+    "term": "Retirement Adequacy",
+    "definition": "How close your current retirement savings are to your goal.",
+    "formula": "Current Retirement Savings ÷ Target Retirement Corpus",
+    "significance": "Indicates if you’re on track for retirement."
+  }
+}

@@ -39,7 +39,25 @@
 <h2>D. Summary</h2>
 <p>{{ summary }}</p>
 
-<h2>E. Appendix</h2>
+<h2>E. Glossary</h2>
+{% if glossary %}
+<ol>
+  {% for var, info in glossary.items() %}
+  <li>
+    <h3>{{ info.term }}</h3>
+    <ul style="margin-left:1em; list-style-type:disc;">
+      <li><blockquote> {{ info.definition }}</blockquote></li>
+      <li><strong>Formula:</strong> {{ info.formula }}</li>
+      <li><strong>Significance:</strong> {{ info.significance }}</li>
+    </ul>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<blockquote>No glossary available.</blockquote>
+{% endif %}
+
+<h2>F. Appendix</h2>
 <table>
   <thead>
     <tr>

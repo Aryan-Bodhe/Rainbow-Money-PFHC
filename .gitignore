@@ -4,3 +4,5 @@ Other/
 temp/*
 _trash_
 _etc_
+temp.py
+removecache.py
