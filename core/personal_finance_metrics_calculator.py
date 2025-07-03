@@ -1,7 +1,7 @@
 from core.exceptions import UserProfileNotProvidedError, InvalidFinanceParameterError
 from config.config import ANNUAL_INFLATION_RATE, AVG_LIFE_EXPECTANCY, RETIREMENT_CORPUS_GROWTH_RATE, RETIREMENT_EXPENSE_REDUCTION_RATE
 from models.UserProfile import UserProfile
-from models.DerivedMetrics import PersonalFinanceMetrics
+from models.DerivedMetrics import PersonalFinanceMetrics, Metric
 from .user_segment_classifier import classify_city_tier
 
 class PersonalFinanceMetricsCalculator:
@@ -46,15 +46,24 @@ class PersonalFinanceMetricsCalculator:
 
         for func in functions:
             key = func.__name__.replace('_compute_', '')
+
             try:
                 value = func(user_profile)
             except InvalidFinanceParameterError as e:
                 print(e)
                 value = 999
+
             if isinstance(value, float):
                 value = round(value, 2)
-            setattr(metrics, key, value)
 
+            # If the key refers to a Metric object
+            if hasattr(metrics, key):
+                metric_obj = getattr(metrics, key)
+                if isinstance(metric_obj, Metric):
+                    metric_obj.value = value
+                else:
+                    # Fall back for flat float fields like total_monthly_income etc.
+                    setattr(metrics, key, value)
         return metrics
 
 

@@ -43,7 +43,7 @@ def set_user_data(raw_data: dict) -> UserProfile:
         print("Validation failed:", e)
 
 
-async def runTest(user_profile_path: str):
+async def runLLMTest(user_profile_path: str):
 
     timeStart = time.perf_counter()
     os.system('clear')
@@ -98,16 +98,7 @@ async def runTest(user_profile_path: str):
 
 
 
-
-
-
-
-
-
-
-
-
-
+    ## BROKEN DUE TO STRUCTURAL CHANGES
     if GENERATE_REPORT:
         print('\n--> Analyzing User Profile using LLMs.')
 
@@ -273,7 +264,7 @@ async def runTest(user_profile_path: str):
         print('-----------------------------------------------------------')
 
 
-async def runTestCollection():
+async def runLLMTestCollection():
     tests = [
         VERY_POOR_PROFILE,
         POOR_PROFILE,
@@ -283,8 +274,10 @@ async def runTestCollection():
     ]
 
     for test in tests:
-        await runTest(user_profile_path=test)
+        await runLLMTest(user_profile_path=test)
         print('Analysis completed')
 
+
 if __name__ == "__main__":
-    asyncio.run(runTestCollection())
+    # asyncio.run(runTestCollection())
+    pass

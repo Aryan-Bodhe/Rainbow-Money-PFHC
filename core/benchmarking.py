@@ -1,4 +1,5 @@
-from models.DerivedMetrics import PersonalFinanceMetrics
+from models.DerivedMetrics import PersonalFinanceMetrics, Metric
+from models.BenchmarkData import BenchmarkData
 from .user_segment_classifier import classify_income_bracket
 from data.ideal_benchmark_data import IDEAL_RANGES
 
@@ -17,48 +18,49 @@ def get_benchmarks(pfm: PersonalFinanceMetrics) -> dict[str, tuple[float, float]
         else:
             min_i, max_i = ideal
         benchmarks[metric] = (min_i, max_i)
-    return benchmarks
+
+    benchmark_data = BenchmarkData(**benchmarks)
+    return benchmark_data
 
 
-def analyse_benchmarks(pfm: PersonalFinanceMetrics) -> dict:
+def analyse_benchmarks(pfm: PersonalFinanceMetrics) -> PersonalFinanceMetrics:
     if pfm is None:
-        raise ValueError('Metrics not Provided.')
-    benchmarks = get_benchmarks(pfm)
-    metrics = pfm.model_dump()
-    analysis = {}
+        raise ValueError("Metrics not Provided.")
+
+    benchmarks = get_benchmarks(pfm)  # dict[str, tuple[float, float]]
 
     low_relax_stage_1 = 0.85
     high_relax_stage_1 = 1.15
-
     low_relax_stage_2 = 0.7
     high_relax_stage_2 = 1.3
-    
-    for key, value in benchmarks.items():
-        bm_low = value[0]
-        bm_high = value[1]
-        user_val = metrics[key]
 
-        if user_val == 999:
-            analysis[key] = 'error_computing_metric'
-            continue
+    for key, (bm_low, bm_high) in benchmarks.items():
+        metric_obj = getattr(pfm, key, None)
 
-        if not isinstance(user_val, float):
-            analysis[key] = 'invalid_metric_value'
+        if not isinstance(metric_obj, Metric):
+            continue  # Skip if not a Metric field
+
+        user_val = metric_obj.value
+        if user_val is None or user_val == 999:
+            metric_obj.verdict = "error_computing_metric"
             continue
 
         if user_val < bm_low * low_relax_stage_2:
-            analysis[key] = 'urgent_attention_needed: too low'
-        elif user_val < bm_low * low_relax_stage_1 :
-            analysis[key] = 'improvement_needed: low'
+            verdict = "extremely_low"
+        elif user_val < bm_low * low_relax_stage_1:
+            verdict = "low"
         elif user_val < bm_low:
-            analysis[key] = 'good'
+            verdict = "good"
         elif user_val < bm_high:
-            analysis[key] = 'excellent'
-        elif user_val <  bm_high * high_relax_stage_1:
-            analysis[key] = 'good'
+            verdict = "excellent"
+        elif user_val < bm_high * high_relax_stage_1:
+            verdict = "good"
         elif user_val < bm_high * high_relax_stage_2:
-            analysis[key] = 'improvement_needed: high'
+            verdict = "high"
         else:
-            analysis[key] = 'urgent_attention_needed: too high'
+            verdict = "extremely_high"
 
-    return analysis
+        metric_obj.verdict = verdict
+
+    return pfm
+

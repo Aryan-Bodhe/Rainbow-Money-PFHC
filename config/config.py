@@ -1,7 +1,7 @@
 LLM_TEMP = 0.1
 ENABLE_TESTING = True
 GENERATE_REPORT = False
-RETRY_ATTEMPT_LIMIT = 7
+RETRY_ATTEMPT_LIMIT = 3
 
 PROFILE_1_PATH = 'data/sample_user_profile1.json'
 PROFILE_2_PATH = 'data/sample_user_profile2.json'

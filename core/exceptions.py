@@ -20,3 +20,5 @@ class LLMResponseFailedError(Exception):
     def __init__(self, provider_name):
         message = Fore.RED + f"[ERROR] Failed to get valid response from '{provider_name}'." + Fore.RESET
         super().__init__(message)
+
+class FeedbackGenerationFailedError(Exception):...
