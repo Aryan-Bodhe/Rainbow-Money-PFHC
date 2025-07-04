@@ -1,10 +1,15 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
-class FeedbackPoint(BaseModel):
+class CommendablePoint(BaseModel):
     header: str
-    content: str 
+    current_scenario: str 
+
+class ImprovementPoint(BaseModel):
+    header: str
+    current_scenario: str
+    actionable: str
 
 class FeedbackData(BaseModel):
-    commendable_points: Optional[List[FeedbackPoint]] = None
-    improvement_points: Optional[List[FeedbackPoint]] = None
+    commendable_points: Optional[List[CommendablePoint]] = None
+    improvement_points: Optional[List[ImprovementPoint]] = None

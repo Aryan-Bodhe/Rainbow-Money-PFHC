@@ -1,240 +1,284 @@
-# Personal Finance Health Calculator
+## Personal Finance Metrics Computation
 
-## Inputs
-1. Personal Data
-    - Age
-    - Gender
-    - City Tier (input city name, then classify)
-    - Marital Status
-    - No of dependents
-    - Expected Retirement Age
-    - Risk Profile (Dropdown)
+### 1. Years to Retirement
 
-2. Income Data (Monthly)
-    - Salaried Income
-    - Business Income
-    - Freelance Income
-    - Investment Returns 
-    - Rental Income
+```
+years_to_retirement = expected_retirement_age − current_age
+```
 
-3. Expense Data (Monthly)
-    - Groceries & Essentials
-    - Bills and Utilities
-    - Health Cover Premium
-    - Term Cover Premium
-    - Discretionary Expense
-
-4. Assets Data (Monthly, unless specified)
-    - Liquid Funds = A/C Balance (Total)
-    - Equity Investment Held (Total)
-    - Equity Investment Recurring
-    - Debt Investment Held (Total)
-    - Debt Investment Recurring
-    - Retirement Funds Held (Total)
-    - Retirement Funds Recurring 
-    - Tax Saver Funds (Annual)
-    - Real Estate Investment (Total)
-
-5. Liabilities Data (Monthly, unless specified)
-    - Credit Card Outstanding Debt (Total)
-    - Credit Card EMI 
-    - Personal Loan Outstanding Debt (Total)
-    - Personal Loan EMI
-    - Car Loan Outstanding Debt (Total)
-    - Car Loan EMI
-    - Student Loan Outstanding Debt (Total)
-    - Student Loan EMI
-    - Home Loan Outstanding Debt (Total)
-    - Home Loan EMI
-
-6. Taxation Data
-    - Property Tax
-    - Income Tax
-    - Availed Deductions (need to be filled section wise na so as to actually tell where)
+* **current\_age**: `user_profile.personal_data.age`
+* **expected\_retirement\_age**: `user_profile.personal_data.expected_retirement_age`
 
 ---
 
-## Computed Metrics
+### 2. Total Assets
 
-**Prerequisites**
-
-- **TotalMonthlyIncome** = Salaried Income + Business Income + Freelance Income + Investment Returns + Rental Income
-- **TotalMonthlyExpenses** = Groceries & Essentials + Bills and Utilities + Health Cover Premium + Term Cover Premium + Discretionary Expense
-- **TotalMonthlyEMI** = Credit Card EMI + Personal Loan EMI + Car Loan EMI + Student Loan EMI + Home Loan EMI
-- **TotalAssets** = Liquid Funds + Equity Investment Held + Debt Investment Held + Retirement Funds Held + Real Estate Investment
-- **TotalLiabilities** = Credit Card Outstanding Debt + Personal Loan Outstanding Debt + Car Loan Outstanding Debt + Student Loan Outstanding Debt + Home Loan Outstanding Debt
-- **YearsToRetirement** = Expected Retirement Age – Age
-
----
-
-1. Metric Name: **Savings Ratio**
-
-   - Required fields: [`TotalMonthlyIncome`, `TotalMonthlyExpenses`]
-   - Formula: (TotalMonthlyIncome – TotalMonthlyExpenses) / TotalMonthlyIncome × 100
-
-2. Metric Name: **Investment‑Savings Ratio**
-
-   - Required fields: [`TotalAssets`, `TotalMonthlyIncome`, `TotalMonthlyExpenses`]
-   - Formula: TotalAssets / (TotalMonthlyIncome – TotalMonthlyExpenses)
-
-3. Metric Name: **Debt-Income Ratio**
-
-   - Required fields: [`TotalMonthlyEMI`, `TotalMonthlyIncome`]
-   - Formula: TotalMonthlyEMI / TotalMonthlyIncome
-
-4. Metric Name: **Emergency Fund Ratio**
-
-   - Required fields: [`Liquid Funds`, `TotalMonthlyExpenses`]
-   - Formula: Liquid Funds / TotalMonthlyExpenses
-
-5. Metric Name: **Liquidity Ratio**
-
-   - Required fields: [`Liquid Funds`, `TotalMonthlyEMI`]
-   - Formula: Liquid Funds / TotalMonthlyEMI
-
-6. Metric Name: **Asset‑Liability Ratio**
-
-   - Required fields: [`TotalAssets`, `TotalLiabilities`]
-   - Formula: TotalAssets / TotalLiabilities
-
-7. Metric Name: **Health Insurance Adequacy**
-
-   - Required fields: [`Health Cover Premium`, `TotalMonthlyIncome`]
-   - Formula: (Health Cover Premium × 12) / (TotalMonthlyIncome × 12)
-
-8. Metric Name: **Term Insurance Adequacy**
-
-   - Required fields: [`Term Cover Premium`, `TotalMonthlyIncome`]
-   - Formula: (Term Cover Premium × 12) / (TotalMonthlyIncome × 12)
-
-9. Metric Name: **Asset Distribution**
-
-   - Required fields: [`Liquid Funds`, `Equity Investment Held`, `Debt Investment Held`, `Retirement Funds Held`, `Real Estate Investment`, `TotalAssets`]
-   - Formula:
-
-     - Liquid share = Liquid Funds / TotalAssets
-     - Equity share = Equity Investment Held / TotalAssets
-     - Debt share = Debt Investment Held / TotalAssets
-     - Retirement share = Retirement Funds Held / TotalAssets
-     - Real estate share = Real Estate Investment / TotalAssets
-
-10. Metric Name: **Housing‑Income Ratio**
-
-    - Required fields: [`Home Loan EMI`, `TotalMonthlyIncome`]
-    - Formula: Home Loan EMI / TotalMonthlyIncome
-
-11. Metric Name: **Expense‑Income Ratio**
-
-    - Required fields: [`TotalMonthlyExpenses`, `TotalMonthlyIncome`]
-    - Formula: TotalMonthlyExpenses / TotalMonthlyIncome
-
-12. Metric Name: **Net Worth Adequacy**
-
-    - Required fields: [`TotalAssets`, `TotalLiabilities`, `TotalMonthlyIncome`]
-    - Formula: (TotalAssets – TotalLiabilities) / (TotalMonthlyIncome × 12)
-
-13. Metric Name: **Tax Efficiency**
-
-    - Required fields: [`Income Tax`, `TotalMonthlyIncome`]
-    - Formula: 1 – (Income Tax / (TotalMonthlyIncome × 12))
-
-14. Metric Name: **Retirement Adequacy**
-
-    - Required fields: [`Retirement Funds Held`, `YearsToRetirement`, `TotalMonthlyIncome`]
-    - Formula: Retirement Funds Held / (YearsToRetirement × TotalMonthlyIncome × 12)
-
-
-- Unused input fields : [`Gender`, `Marital Status`, `Risk Profile`, `Equity Investment Recurring`, `Debt Investment Recurring`, `Retirement Funds Recurring`, `Tax Saver Funds`, `No of Dependents`, `Property Tax`, `Availed Deductions`]
+```
+total_assets =
+    asset_data.total_debt_investments
+  + asset_data.total_equity_investments
+  + asset_data.total_savings_balance
+  + asset_data.total_retirement_investments
+  + asset_data.total_real_estate_investments
+  + asset_data.total_emergency_fund
+```
 
 ---
 
-## Analysis Questions
+### 3. Total Liabilities
 
-1. Question: Is the user’s Expense‑Income Ratio ≤ 0.35?
-   Fields: [`Expense‑Income Ratio`]
-   Actionable: If > 0.35 → recommend reducing non‑essential spending categories
-
-2. Question: Is the user’s recurring investment rate ≥ 0.10?
-   Fields: [`Equity Investment Recurring`, `Debt Investment Recurring`, `Retirement Funds Recurring`, `TotalMonthlyIncome`]
-   Actionable: If < 0.10 → recommend setting up or increasing automated SIPs
-
-3. Question: Is the user’s Total Monthly Savings ≥ 15% of income?
-   Fields: [`Savings%`]
-   Actionable: If < 15% → recommend automating a higher savings transfer or payroll deduction
-
-4. Question: Is the user’s Liquidity Ratio ≥ 1?
-   Fields: [`Liquidity Ratio`]
-   Actionable: If < 1 → recommend boosting liquid buffer or reducing EMI commitments
-
-5. Question: Is the user’s Asset‑Liability Ratio ≥ 1.5?
-   Fields: [`Asset‑Liability Ratio`]
-   Actionable: If < 1.5 → recommend accelerating debt repayment or growing asset allocations
-
-6. Question: Is the user’s Housing‑Income Ratio ≤ 0.30?
-   Fields: [`Housing‑Income Ratio`]
-   Actionable: If > 0.30 → recommend refinancing home loan or exploring rental income options
-
-7. Question: Is the user’s DTI ≤ 0.30?
-   Fields: [`DTI`]
-   Actionable: If > 0.30 → recommend debt restructuring, tenor extension, or prioritizing high‑interest debt paydown
-
-8. Question: Is the user’s EFR ≥ 3?
-   Fields: [`EFR`]
-   Actionable: If < 3 → recommend building emergency fund via small, regular transfers
-
-9. Question: Is the user’s Savings% ≥ tier‑adjusted target?
-   Fields: [`Savings%`, `City Tier`]
-   Actionable: If below target → recommend increasing automated savings (higher SIP or payroll deduction)
-
-10. Question: Does any expense category exceed 30% of TotalMonthlyExpenses?
-    Fields: [`Groceries & Essentials`, `Bills and Utilities`, `Discretionary Expense`, `TotalMonthlyExpenses`]
-    Actionable: If yes → recommend capping that category to a fixed monthly budget
-
-11. Question: Is the user’s Health Insurance Adequacy ≥ 0.05 (5% of income)?
-    Fields: [`Health Insurance Adequacy`]
-    Actionable: If < 0.05 → recommend increasing health cover sum‑insured or adding riders
-
-12. Question: Is the user’s Term Insurance Adequacy ≥ 0.05 (5% of income)?
-    Fields: [`Term Insurance Adequacy`]
-    Actionable: If < 0.05 → recommend increasing term cover or extending coverage term
-
-13. Question: Is the user’s Retirement Adequacy ≥ 1?
-    Fields: [`Retirement Adequacy`]
-    Actionable: If < 1 → recommend boosting retirement contributions or shifting to higher‑growth funds
-
-14. Question: Is the user’s Tax Efficiency ≥ 0.75?
-    Fields: [`Tax Efficiency`]
-    Actionable: If < 0.75 → recommend utilizing unused deductions under Sections 80C/80D/80E
-
-15. Question: Is the user’s Investment‑Savings Ratio ≤ 5?
-    Fields: [`Investment‑Savings Ratio`]
-    Actionable: If > 5 → recommend prioritizing savings buildup before new investments
-
-16. Question: Is the user’s Asset Distribution aligned with their Risk Profile?
-    Fields: [`Asset Distribution`, `Risk Profile`]
-    Actionable: If misaligned → recommend rebalancing toward target allocation bands
-
-17. Question: Is the user’s Net Worth Adequacy ≥ 1?
-    Fields: [`Net Worth Adequacy`]
-    Actionable: If < 1 → recommend strategies to grow net worth (debt reduction or asset accumulation)
-
-18. Question: After all EMIs and expenses, is there surplus cash available?
-    Fields: [`TotalMonthlyIncome`, `TotalMonthlyExpenses`, `TotalMonthlyEMI`]
-    Actionable: If surplus > 0 → recommend allocating to highest‑interest debt or equity SIPs
-
+```
+total_liabilities =
+    liability_data.outstanding_car_loan_balance
+  + liability_data.outstanding_credit_card_balance
+  + liability_data.outstanding_home_loan_balance
+  + liability_data.outstanding_personal_loan_balance
+  + liability_data.outstanding_student_loan_balance
+```
 
 ---
 
+### 4. Total Monthly EMI
 
-## Prompt Template
-{
-  "inputs": {...},
-  "rules": [
-    {
-      "question": "Is the EMI burden below 30% of gross income?",
-      "formula": "(Total_EMIs / Gross_Income) <= 0.3",
-      "explanation_if_false": "High EMI burden; consider reducing loan obligations."
-    },
-    ...
-  ]
+```
+total_monthly_emi =
+    liability_data.car_loan_emi
+  + liability_data.credit_card_emi
+  + liability_data.home_loan_emi
+  + liability_data.personal_loan_emi
+  + liability_data.student_loan_emi
+```
+
+---
+
+### 5. Total Monthly Investments
+
+```
+total_monthly_investments =
+    asset_data.debt_sip
+  + asset_data.equity_sip
+  + asset_data.retirement_sip
+```
+
+---
+
+### 6. Total Monthly Income
+
+```
+total_monthly_income =
+    income_data.business_income
+  + income_data.freelance_income
+  + income_data.investment_returns
+  + income_data.rental_income
+  + income_data.salaried_income
+```
+
+---
+
+### 7. Total Monthly Expense
+
+```
+total_monthly_expense =
+    expense_data.discretionary_expense
+  + expense_data.groceries_and_essentials
+  + expense_data.housing_cost
+  + expense_data.utilities_and_bills
+  + expense_data.medical_insurance_premium
+  + expense_data.term_insurance_premium
+```
+
+---
+
+### 8. Target Retirement Corpus
+
+```
+# Inputs
+present_age = personal_data.age
+retirement_age = personal_data.expected_retirement_age
+current_expenses = total_monthly_expense + total_monthly_emi
+
+years_to_retirement = retirement_age − present_age
+future_expenses = current_expenses × (1 + inflation_rate) ** years_to_retirement
+retirement_expenses = future_expenses × (1 − expense_reduction_rate)
+
+real_return = ((1 + post_retirement_return) / (1 + inflation_rate)) − 1
+retirement_years = life_expectancy − retirement_age
+
+if real_return ≈ 0:
+    target_corpus = retirement_expenses × retirement_years × 12
+else:
+    target_corpus =
+      retirement_expenses ×
+      (1 − (1 + real_return/12)^(−retirement_years×12))
+      ÷ (real_return/12)
+```
+
+---
+
+### 9. Savings‑Income Ratio
+
+```
+savings_income_ratio =
+  (total_monthly_income
+   − total_monthly_expense
+   − total_monthly_emi)
+  ÷ total_monthly_income
+```
+
+---
+
+### 10. Investment‑Income Ratio
+
+```
+investment_income_ratio =
+  total_monthly_investments
+  ÷ total_monthly_income
+```
+
+---
+
+### 11. Expense‑Income Ratio
+
+```
+expense_income_ratio =
+  (total_monthly_expense + total_monthly_emi)
+  ÷ total_monthly_income
+```
+
+---
+
+### 12. Debt‑Income Ratio
+
+```
+debt_income_ratio =
+  total_monthly_emi
+  ÷ total_monthly_income
+```
+
+---
+
+### 13. Emergency Fund Ratio
+
+```
+emergency_fund_ratio =
+  asset_data.total_emergency_fund
+  ÷ (total_monthly_expense + total_monthly_emi)
+```
+
+---
+
+### 14. Liquidity Ratio
+
+```
+liquidity_ratio =
+  asset_data.total_savings_balance
+  ÷ (total_monthly_expense + total_monthly_emi)
+```
+
+---
+
+### 15. Asset‑Liability Ratio
+
+```
+asset_liability_ratio =
+  total_assets
+  ÷ total_liabilities
+```
+
+---
+
+### 16. Housing‑Income Ratio
+
+```
+housing_income_ratio =
+  (expense_data.housing_cost + liability_data.home_loan_emi)
+  ÷ total_monthly_income
+```
+
+---
+
+### 17. Health Insurance Adequacy
+
+```
+health_insurance_adequacy =
+  insurance_data.total_medical_cover
+  ÷ ((no_of_dependents + 1) × 500_000)
+```
+
+* Benchmark: ₹ 500 000 per person
+
+---
+
+### 18. Term Insurance Adequacy
+
+```
+term_insurance_adequacy =
+  insurance_data.total_term_cover
+  ÷ (total_monthly_income × 12 × 15)
+```
+
+* Assumes 15 × annual income cover
+
+---
+
+### 19. Net Worth Adequacy
+
+```
+multiplier = {
+  age < 30: 1,
+  age < 40: 2,
+  age < 50: 4,
+  age < 60: 6,
+  else: 8
 }
+
+net_worth = total_assets − total_liabilities
+annual_income = total_monthly_income × 12
+required_net_worth = annual_income × multiplier
+
+net_worth_adequacy =
+  net_worth
+  ÷ required_net_worth
+```
+
+---
+
+### 20. Retirement Adequacy
+
+```
+retirement_corpus_future_value =
+  L × (1 + r_g)^T
+  + sip × (1 + r_g/12) × ((1 + r_g/12)^(12T) − 1) × 12/r_g
+
+retirement_adequacy =
+  retirement_corpus_future_value
+  ÷ target_retirement_corpus
+```
+
+* **L** = current retirement investments
+* **r\_g** = RETIREMENT\_CORPUS\_GROWTH\_RATE
+* **T** = years to retirement
+* **sip** = monthly retirement SIP
+
+---
+
+### 21. Asset Class Distribution
+
+```python
+allocation = {
+  "liquid": asset_data.total_savings_balance,
+  "equity": asset_data.total_equity_investments,
+  "debt": asset_data.total_debt_investments,
+  "retirement": asset_data.total_retirement_investments,
+  "real_estate": asset_data.total_real_estate_investments
+}
+
+asset_class_distribution = {
+  name: round(value ÷ total_assets, 2)
+  for name, value in allocation.items()
+}
+```
+
+> All ratios in code are rounded to two decimals, and divisions guard against `ZeroDivisionError` by raising `InvalidFinanceParameterError`.
+
+---
