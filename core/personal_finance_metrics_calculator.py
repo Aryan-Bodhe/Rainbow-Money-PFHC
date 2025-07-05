@@ -1,27 +1,44 @@
 from core.exceptions import UserProfileNotProvidedError, InvalidFinanceParameterError
-from config.config import ANNUAL_INFLATION_RATE, AVG_LIFE_EXPECTANCY, RETIREMENT_CORPUS_GROWTH_RATE, RETIREMENT_EXPENSE_REDUCTION_RATE
 from models.UserProfile import UserProfile
 from models.DerivedMetrics import PersonalFinanceMetrics, Metric
 from .user_segment_classifier import classify_city_tier
+from .benchmarking import analyse_metrics_against_benchmarks
+from config.config import (
+    ANNUAL_INFLATION_RATE, 
+    AVG_LIFE_EXPECTANCY, 
+    RETIREMENT_CORPUS_GROWTH_RATE, 
+    RETIREMENT_EXPENSE_REDUCTION_RATE,
+    MEDICAL_COVER_FACTOR,
+    TERM_COVER_FACTOR
+)
 
 class PersonalFinanceMetricsCalculator:
     def __init__(self):
         self.user_profile = None
+        self.target_retirement_corpus = 0
+        self.years_to_retirement = 0
+        self.total_monthly_income = 0
+        self.total_monthly_expense = 0
+        self.total_monthly_investments = 0
+        self.total_monthly_emi = 0
+        self.total_assets = 0
+        self.total_liabilities = 0
 
 
     def analyze_user_profile(self, user_profile: UserProfile):
         self._set_user_profile(user_profile)
         metrics = PersonalFinanceMetrics()
 
-        self.user_profile.years_to_retirement = self._compute_years_to_retirement()
-        metrics.total_assets = self.user_profile.total_assets = self._compute_total_assets()
-        metrics.total_liabilities = self.user_profile.total_liabilities = self._compute_total_liabilities()
-        metrics.total_monthly_emi = self.user_profile.total_monthly_emi = self._compute_total_monthly_emi()
-        metrics.total_monthly_expense = self.user_profile.total_monthly_expense = self._compute_total_monthly_expense()
-        metrics.total_monthly_income = self.user_profile.total_monthly_income = self._compute_total_monthly_income()
-        metrics.total_monthly_investments = self.user_profile.total_monthly_investments = self._compute_total_monthly_investments()
-        metrics.target_retirement_corpus = self.user_profile.target_retirement_corpus = self._compute_target_retirement_corpus()
+        self.years_to_retirement = self._compute_years_to_retirement()
+        metrics.total_assets = self.total_assets = self._compute_total_assets()
+        metrics.total_liabilities = self.total_liabilities = self._compute_total_liabilities()
+        metrics.total_monthly_emi = self.total_monthly_emi = self._compute_total_monthly_emi()
+        metrics.total_monthly_expense = self.total_monthly_expense = self._compute_total_monthly_expense()
+        metrics.total_monthly_income = self.total_monthly_income = self._compute_total_monthly_income()
+        metrics.total_monthly_investments = self.total_monthly_investments = self._compute_total_monthly_investments()
+        metrics.target_retirement_corpus = self.target_retirement_corpus = self._compute_target_retirement_corpus()
         metrics.city_tier = classify_city_tier(user_profile.personal_data.city)
+        metrics.asset_class_distribution = self._compute_asset_class_distribution()
 
         functions = [            
             # compute ratios
@@ -39,11 +56,9 @@ class PersonalFinanceMetricsCalculator:
             self._compute_term_insurance_adequacy,
             self._compute_net_worth_adequacy,
             self._compute_retirement_adequacy,
-
-            # compute distribution
-            self._compute_asset_class_distribution,
         ]
 
+        # computing exclusively ratios only
         for func in functions:
             key = func.__name__.replace('_compute_', '')
 
@@ -53,17 +68,10 @@ class PersonalFinanceMetricsCalculator:
                 print(e)
                 value = 999
 
-            if isinstance(value, float):
-                value = round(value, 2)
+            value = round(value, 2)
+            metric_obj = Metric(metric_name=key, value=value)
+            setattr(metrics, key, metric_obj)
 
-            # If the key refers to a Metric object
-            if hasattr(metrics, key):
-                metric_obj = getattr(metrics, key)
-                if isinstance(metric_obj, Metric):
-                    metric_obj.value = value
-                else:
-                    # Fall back for flat float fields like total_monthly_income etc.
-                    setattr(metrics, key, value)
         return metrics
 
 
@@ -189,8 +197,8 @@ class PersonalFinanceMetricsCalculator:
             self._set_user_profile(user_profile=user_profile)
         
         savings_ratio = 0
-        savings = self.user_profile.total_monthly_income - self.user_profile.total_monthly_expense - self.user_profile.total_monthly_emi
-        income = self.user_profile.total_monthly_income
+        savings = self.total_monthly_income - self.total_monthly_expense - self.total_monthly_emi
+        income = self.total_monthly_income
 
         try:
             savings_ratio = savings / income
@@ -206,8 +214,8 @@ class PersonalFinanceMetricsCalculator:
                 raise UserProfileNotProvidedError()
             self._set_user_profile(user_profile=user_profile)
         
-        investment = self.user_profile.total_monthly_investments
-        income = self.user_profile.total_monthly_income
+        investment = self.total_monthly_investments
+        income = self.total_monthly_income
 
         try:
             investment_ratio = investment / income
@@ -222,8 +230,8 @@ class PersonalFinanceMetricsCalculator:
                 raise UserProfileNotProvidedError()
             self._set_user_profile(user_profile=user_profile)
         
-        expense = self.user_profile.total_monthly_expense + self.user_profile.total_monthly_emi
-        income = self.user_profile.total_monthly_income
+        expense = self.total_monthly_expense + self.total_monthly_emi
+        income = self.total_monthly_income
 
         try:
             expense_ratio = expense / income
@@ -238,8 +246,8 @@ class PersonalFinanceMetricsCalculator:
                 raise UserProfileNotProvidedError()
             self._set_user_profile(user_profile=user_profile)
         
-        debt = self.user_profile.total_monthly_emi
-        income = self.user_profile.total_monthly_income
+        debt = self.total_monthly_emi
+        income = self.total_monthly_income
 
         try:
             dti = debt / income
@@ -256,8 +264,8 @@ class PersonalFinanceMetricsCalculator:
         
         emergency = self.user_profile.asset_data.total_emergency_fund
         expense = (
-            self.user_profile.total_monthly_expense + 
-            self.user_profile.total_monthly_emi
+            self.total_monthly_expense + 
+            self.total_monthly_emi
         )
 
         try:
@@ -277,8 +285,8 @@ class PersonalFinanceMetricsCalculator:
             self.user_profile.asset_data.total_savings_balance
         )
         expense = (
-            self.user_profile.total_monthly_expense  +
-            self.user_profile.total_monthly_emi
+            self.total_monthly_expense  +
+            self.total_monthly_emi
         )
 
         try:
@@ -294,8 +302,8 @@ class PersonalFinanceMetricsCalculator:
                 raise UserProfileNotProvidedError()
             self._set_user_profile(user_profile=user_profile)
         
-        assets = self.user_profile.total_assets
-        liabilities = self.user_profile.total_liabilities
+        assets = self.total_assets
+        liabilities = self.total_liabilities
 
         try:
             alr = assets / liabilities
@@ -311,7 +319,7 @@ class PersonalFinanceMetricsCalculator:
             self._set_user_profile(user_profile=user_profile)
         
         housing_cost = self.user_profile.expense_data.housing_cost + self.user_profile.liability_data.home_loan_emi
-        income = self.user_profile.total_monthly_income
+        income = self.total_monthly_income
 
         try:
             hir = housing_cost / income
@@ -327,7 +335,7 @@ class PersonalFinanceMetricsCalculator:
             self._set_user_profile(user_profile=user_profile)
         
         health_cover = self.user_profile.insurance_data.total_medical_cover
-        dep = (self.user_profile.personal_data.no_of_dependents + 1) * 500000 # 5L pp benchmark
+        dep = (self.user_profile.personal_data.no_of_dependents + 1) * MEDICAL_COVER_FACTOR # 5L pp benchmark
 
         try:
             hia = health_cover / dep 
@@ -343,7 +351,7 @@ class PersonalFinanceMetricsCalculator:
             self._set_user_profile(user_profile=user_profile)
         
         term_cover = self.user_profile.insurance_data.total_term_cover
-        income = self.user_profile.total_monthly_income * 12 * 15    # threshold 15
+        income = self.total_monthly_income * 12 * TERM_COVER_FACTOR    # threshold 15
 
         try:
             tia = term_cover / income
@@ -372,8 +380,8 @@ class PersonalFinanceMetricsCalculator:
         else:
             multiplier = 8
 
-        net_worth = self.user_profile.total_assets - self.user_profile.total_liabilities
-        annual_income = (self.user_profile.total_monthly_income * 12)
+        net_worth = self.total_assets - self.total_liabilities
+        annual_income = (self.total_monthly_income * 12)
         required_net_worth = annual_income * multiplier
 
         try:
@@ -413,7 +421,7 @@ class PersonalFinanceMetricsCalculator:
 
         present_age = self.user_profile.personal_data.age
         retirement_age = self.user_profile.personal_data.expected_retirement_age
-        current_expenses = self.user_profile.total_monthly_expense + self.user_profile.total_monthly_emi
+        current_expenses = self.total_monthly_expense + self.total_monthly_emi
 
         life_expectancy = AVG_LIFE_EXPECTANCY
         inflation = ANNUAL_INFLATION_RATE * 100
@@ -470,7 +478,7 @@ class PersonalFinanceMetricsCalculator:
             if user_profile is None:
                 raise UserProfileNotProvidedError()
             self._set_user_profile(user_profile=user_profile)
-        total_assets = self.user_profile.total_assets
+        total_assets = self.total_assets
         alloc = {
             "liquid": self.user_profile.asset_data.total_savings_balance,
             "equity": self.user_profile.asset_data.total_equity_investments,

@@ -58,18 +58,18 @@ Here is the user's personal data (JSON):
 {personal_data}
 
 ## METRICS  
-- Savings-Income Ratio  
-- Investment-Income Ratio  
-- Expense-Income Ratio  
-- Debt-Income Ratio  
-- Emergency Fund Ratio  
-- Liquidity Ratio  
-- Asset-Liability Ratio  
-- Housing-Income Ratio  
-- Health Insurance Adequacy  
-- Term Insurance Adequacy  
-- Net Worth Adequacy  
-- Retirement Adequacy
+savings_income_ratio
+investment_income_ratio
+expense_income_ratio
+debt_income_ratio
+emergency_fund_ratio
+liquidity_ratio
+asset_liability_ratio
+housing_income_ratio
+health_insurance_adequacy
+term_insurance_adequacy
+net_worth_adequacy
+retirement_adequacy
 
 # TASK  
 1. Assign each metric an integer “importance weight” ≥ 3. Tailor weights by the user's life stage (age, dependents).
@@ -78,10 +78,10 @@ Here is the user's personal data (JSON):
 Return **only** a JSON object mapping metric names to integer weights, without the ```json tags, as for example:  
 
 {{  
-  "Savings-Income Ratio": 10,  
-  "Investment-Income Ratio": 8,  
+  "savings_income_ratio": 10,  
+  "investment_income_ratio": 8,  
   …  
-  "Retirement Adequacy": 15  
+  "retirement_adequacy": 15  
 }}
 
 """

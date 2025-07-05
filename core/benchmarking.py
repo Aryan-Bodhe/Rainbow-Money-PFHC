@@ -4,7 +4,7 @@ from .user_segment_classifier import classify_income_bracket
 from data.ideal_benchmark_data import IDEAL_RANGES
 
 
-def get_benchmarks(pfm: PersonalFinanceMetrics) -> dict[str, tuple[float, float]]:
+def get_benchmarks(pfm: PersonalFinanceMetrics) -> BenchmarkData:
     """
     Returns a dict mapping each metric to its ideal (min, max) benchmark values based on the user's profile.
     """
@@ -23,11 +23,11 @@ def get_benchmarks(pfm: PersonalFinanceMetrics) -> dict[str, tuple[float, float]
     return benchmark_data
 
 
-def analyse_benchmarks(pfm: PersonalFinanceMetrics) -> PersonalFinanceMetrics:
+def analyse_metrics_against_benchmarks(pfm: PersonalFinanceMetrics):
     if pfm is None:
         raise ValueError("Metrics not Provided.")
 
-    benchmarks = get_benchmarks(pfm)  # dict[str, tuple[float, float]]
+    benchmarks = get_benchmarks(pfm).model_dump()  # dict[str, tuple[float, float]]
 
     low_relax_stage_1 = 0.85
     high_relax_stage_1 = 1.15
@@ -61,6 +61,4 @@ def analyse_benchmarks(pfm: PersonalFinanceMetrics) -> PersonalFinanceMetrics:
             verdict = "extremely_high"
 
         metric_obj.verdict = verdict
-
-    return pfm
 

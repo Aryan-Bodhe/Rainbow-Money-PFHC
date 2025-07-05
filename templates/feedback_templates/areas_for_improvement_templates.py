@@ -135,19 +135,95 @@ AREAS_FOR_IMPROVEMENT = {
     "net_worth_adequacy": {
         "extremely_low": {
             "current_scenario": "Your net worth is critically low for your age group.",
-            "actionable": "Accelerate asset creation by at least ₹{gap_amt:,.0f} to reach {min_val:.0f}× annual income."
+            "actionable": "Accelerate asset creation or reduce high-value debts (if any)."
         },
         "low": {
             "current_scenario": "Your net worth is below expected benchmarks.",
-            "actionable": "Build an additional ₹{gap_amt:,.0f} in assets to move toward {min_val:.0f}×–{max_val:.0f} income range."
+            "actionable": "Build additional assets to move towards a healthy range."
         },
         "high": {
             "current_scenario": "You’ve accumulated strong net worth for your age.",
-            "actionable": "Explore advanced goals or impact opportunities with ₹{gap_amt:,.0f} surplus."
+            "actionable": "Explore advanced goals or impact opportunities with the surplus."
         },
         "extremely_high": {
             "current_scenario": "You are significantly ahead in wealth accumulation.",
-            "actionable": "Use the excess ₹{gap_amt:,.0f} for legacy planning or lifestyle flexibility."
+            "actionable": "Use the excess assets for legacy planning or lifestyle flexibility."
         },
-    }
+    },
+
+    "savings_income_ratio": {
+        "extremely_low": {
+            "current_scenario": "Your savings rate is only {user_value:.0%} of income—far below healthy levels.",
+            "actionable": "Increase monthly savings by ₹{gap_amt:,.0f} to reach at least {min_val:.0%} of your income."
+        },
+        "low": {
+            "current_scenario": "You’re saving {user_value:.0%} of your income.",
+            "actionable": "Aim to boost savings by ₹{gap_amt:,.0f} to enter the ideal {min_val:.0%}–{max_val:.0%} band."
+        },
+        "high": {
+            "current_scenario": "Your savings rate is {user_value:.0%}, slightly above target.",
+            "actionable": "You may consider reallocating ₹{gap_amt:,.0f} toward debt repayment or investments."
+        },
+        "extremely_high": {
+            "current_scenario": "You’re saving {user_value:.0%} of income–perhaps too much.",
+            "actionable": "Ensure you balance savings with lifestyle; consider utilising ₹{gap_amt:,.0f} for personal goals, investing, or debt reduction."
+        },
+    },
+
+    "investment_income_ratio": {
+        "extremely_low": {
+            "current_scenario": "Only {user_value:.0%} of income is going into investments—very low.",
+            "actionable": "Allocate an extra ₹{gap_amt:,.0f} monthly to investments to hit {min_val:.0%}."
+        },
+        "low": {
+            "current_scenario": "Your investment rate is {user_value:.0%}.",
+            "actionable": "Increase by ₹{gap_amt:,.0f} to get within the {min_val:.0%}–{max_val:.0%} range."
+        },
+        "high": {
+            "current_scenario": "Investments make up {user_value:.0%} of your income—above the target.",
+            "actionable": "Consider diverting ₹{gap_amt:,.0f} towards other goals like emergency funds."
+        },
+        "extremely_high": {
+            "current_scenario": "You’re investing {user_value:.0%} of income—excellent but aggressive.",
+            "actionable": "Review liquidity to ensure you’re not overexposed; free up ₹{gap_amt:,.0f} if needed."
+        },
+    },
+
+    "expense_income_ratio": {
+        "extremely_low": {
+            "current_scenario": "Your expenses are only {user_value:.0%} of income—unusually low.",
+            "actionable": "Review if essential needs are met; you could allocate ₹{gap_amt:,.0f} toward better quality of life."
+        },
+        "low": {
+            "current_scenario": "You spend {user_value:.0%} of your income.",
+            "actionable": "If comfortable, consider increasing to {min_val:.0%}–{max_val:.0%} for balanced living."
+        },
+        "high": {
+            "current_scenario": "Expenses are {user_value:.0%} of income—above ideal.",
+            "actionable": "Cut down expenses (possibly discretionary) by ₹{gap_amt:,.0f} to reach {max_val:.0%}."
+        },
+        "extremely_high": {
+            "current_scenario": "You’re spending {user_value:.0%} of income—very high.",
+            "actionable": "Implement a budget cut of ₹{gap_amt:,.0f} to curb spending into {max_val:.0%} territory."
+        },
+    },
+
+    "debt_income_ratio": {
+        "extremely_low": {
+            "current_scenario": "Your debt is {user_value:.0%} of income—almost zero, risky if leveraging credit.",
+            "actionable": "Consider safe leverage up to {min_val:.0%} for growth, if appropriate."
+        },
+        "low": {
+            "current_scenario": "Debt stands at {user_value:.0%} of income.",
+            "actionable": "It’s healthy but you could use up to {max_val:.0%} for strategic borrowing."
+        },
+        "high": {
+            "current_scenario": "Your debt is {user_value:.0%} of income—above target.",
+            "actionable": "Pay down ₹{gap_amt:,.0f} to fall within the {min_val:.0%}–{max_val:.0%} guideline."
+        },
+        "extremely_high": {
+            "current_scenario": "Debt at {user_value:.0%} of income is very high.",
+            "actionable": "Focus on repaying ₹{gap_amt:,.0f} urgently to reduce financial strain."
+        },
+    },
 }

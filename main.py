@@ -6,12 +6,13 @@ import asyncio
 import time
 
 from models.UserProfile import UserProfile
+from models.DerivedMetrics import PersonalFinanceMetrics
 from apis.llm_clients.OpenRouterLLM import OpenRouterLLM
 from apis.llm_clients.TogetherLLM import TogetherLLM
 from core.personal_finance_metrics_calculator import PersonalFinanceMetricsCalculator
 from utils.pdf_generator import PDFGenerator
 from config.config import ENABLE_TESTING, REPORT_TEMPLATE_NAME, GENERATE_REPORT
-from core.benchmarking import get_benchmarks, analyse_benchmarks
+from core.benchmarking import get_benchmarks, analyse_metrics_against_benchmarks
 from core.scoring_system import score_metrics
 from utils.response_parsing import post_process_weights
 from utils.data_validation import validate_report_response, is_valid_json
@@ -20,6 +21,7 @@ from templates.prompt_templates.areas_for_improvement_generation_template import
 from templates.prompt_templates.commendable_areas_generation_template import COMMENDABLE_AREAS_SYS_MSG, COMMENDABLE_AREAS_USER_MSG
 from templates.prompt_templates.profile_review_generation_template import PROFILE_REVIEW_SYS_MSG, PROFILE_REVIEW_USER_MSG
 from templates.prompt_templates.summary_generation_template import SUMMARY_GENERATION_SYS_MSG, SUMMARY_GENERATION_USER_MSG
+from core.finance_analysis import FinancialAnalysisEngine
 
 from config.config import (
     VERY_POOR_PROFILE,
@@ -70,7 +72,7 @@ async def runLLMTest(user_profile_path: str):
     benchmark_data = get_benchmarks(derived_metrics)
     benchmark_data_json = json.dumps(benchmark_data)
 
-    benchmark_analysis = analyse_benchmarks(derived_metrics)
+    # benchmark_analysis = analyse_benchmarks(derived_metrics)
 
     print('----------------------------------------')
 
@@ -92,7 +94,8 @@ async def runLLMTest(user_profile_path: str):
         json.dump(benchmark_data, indent=2, fp=f)
 
     with open(f'temp/test_data_results/{prefix}_benchmark_analysis.json', 'w') as f:
-        json.dump(benchmark_analysis, indent=2, fp=f)
+        # json.dump(benchmark_analysis, indent=2, fp=f)
+        pass
 
 
 
@@ -278,6 +281,61 @@ async def runLLMTestCollection():
         print('Analysis completed')
 
 
+def assign_weights(pfm: PersonalFinanceMetrics, weights: dict):
+    for metric_name, wt in weights.items():
+        metric_data = getattr(pfm, metric_name)
+        setattr(metric_data, 'weight', wt)
+
+
+async def runStaticTest():
+    os.system('clear')
+    console = Console()
+    print('--> Starting PFHC Analysis.')
+
+    raw_data = read_json_from_file(AVERAGE_PROFILE)
+    user_profile = set_user_data(raw_data)
+
+    pfmc = PersonalFinanceMetricsCalculator()
+    derived_metrics = pfmc.analyze_user_profile(user_profile)
+    benchmark_data = get_benchmarks(derived_metrics)
+
+    with open('temp/static_test_data/user_profile.json', 'w') as f:
+        json.dump(user_profile.model_dump(), f, indent=2)
+
+    with open('temp/static_test_data/metric_data.json', 'w') as f:
+        json.dump(derived_metrics.model_dump(), f, indent=2)
+
+    with open('temp/static_test_data/benchmark_data.json', 'w') as f:
+        json.dump(benchmark_data.model_dump(), f, indent=2)
+
+    print('--> PFHC Computation complete.')
+    print('\n-----------------------------------------------------\n')
+    
+    print('--> Starting LLM Analysis.')
+    llm = TogetherLLM(llm_model='LG_Exaone_3.5_Instruct', temperature=1)
+    personal_data_json = user_profile.personal_data.model_dump_json()
+
+    weight_data = await llm.generate_weights_using_llm(personal_data_json, advanced=False)
+
+    weights = post_process_weights(weight_data['response'])
+    perf_data = weight_data['perf_data']
+
+    print('\n-----------------------------------------------------\n')
+    console.print("[bold yellow]LLM Performance Data:[/]")
+    console.print_json(data=perf_data)
+    print('\n-----------------------------------------------------\n')
+
+    assign_weights(derived_metrics, weights)
+
+    financial_analysor = FinancialAnalysisEngine()
+    results = financial_analysor.analyse(user_profile, derived_metrics, benchmark_data)
+
+    console.print("[bold yellow]Financial Analysis results:[/]")
+    console.print_json(json=results.model_dump_json(), indent=2)
+    print('--> PFHC Analysis Complete.')
+
+
+
 if __name__ == "__main__":
     # asyncio.run(runTestCollection())
-    pass
+    asyncio.run(runStaticTest())
