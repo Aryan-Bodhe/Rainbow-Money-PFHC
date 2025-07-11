@@ -351,7 +351,7 @@ class PersonalFinanceMetricsCalculator:
             self._set_user_profile(user_profile=user_profile)
         
         term_cover = self.user_profile.insurance_data.total_term_cover
-        income = self.total_monthly_income * 12 * TERM_COVER_FACTOR    # threshold 15
+        income = self.total_monthly_income * 12 * TERM_COVER_FACTOR    # threshold
 
         try:
             tia = term_cover / income
@@ -399,6 +399,7 @@ class PersonalFinanceMetricsCalculator:
 
         L = self.user_profile.asset_data.total_retirement_investments
         r_g = RETIREMENT_CORPUS_GROWTH_RATE
+        r_i = ANNUAL_INFLATION_RATE
         curr_age = self.user_profile.personal_data.age
         retirement_age = self.user_profile.personal_data.expected_retirement_age
         sip = self.user_profile.asset_data.retirement_sip
@@ -407,7 +408,8 @@ class PersonalFinanceMetricsCalculator:
         try:
             lumpsum_future = (L * (1 + r_g) ** T) 
             sip_future = (sip * (1 + r_g / 12) * ((1 + r_g / 12) ** (12 * T) - 1) * 12 / r_g)
-            return lumpsum_future + sip_future
+            final_value = (lumpsum_future + sip_future) * (1 + r_i) ** T
+            return final_value
         except ZeroDivisionError:
             raise InvalidFinanceParameterError("err", "err")
 
@@ -424,9 +426,9 @@ class PersonalFinanceMetricsCalculator:
         current_expenses = self.total_monthly_expense + self.total_monthly_emi
 
         life_expectancy = AVG_LIFE_EXPECTANCY
-        inflation = ANNUAL_INFLATION_RATE * 100
-        post_retirement_return = RETIREMENT_CORPUS_GROWTH_RATE * 100
-        expense_reduction = RETIREMENT_EXPENSE_REDUCTION_RATE
+        inflation = ANNUAL_INFLATION_RATE
+        post_retirement_return = RETIREMENT_CORPUS_GROWTH_RATE
+        expense_reduction_rate = RETIREMENT_EXPENSE_REDUCTION_RATE
 
 
         # Input validation
@@ -434,18 +436,18 @@ class PersonalFinanceMetricsCalculator:
             raise ValueError("Retirement age must be greater than present age.")
         if retirement_age >= life_expectancy:
             raise ValueError("Life expectancy must be greater than retirement age.")
-        if expense_reduction < 0 or expense_reduction > 50:
+        if expense_reduction_rate < 0 or expense_reduction_rate > 50:
             raise ValueError("Expense reduction must be between 0% and 50%.")
 
         # Calculate future expenses at retirement (adjusted for inflation)
         years_to_retirement = retirement_age - present_age
-        future_expenses = current_expenses * (1 + inflation / 100) ** years_to_retirement
+        future_expenses = current_expenses * (1 + inflation) ** years_to_retirement
 
         # Apply expense reduction in retirement
-        retirement_expenses = future_expenses * (1 - expense_reduction / 100)
+        retirement_expenses = future_expenses * (1 - expense_reduction_rate)
 
         # Calculate real rate of return (adjusting post-retirement returns for inflation)
-        real_return = ((1 + post_retirement_return / 100) / (1 + inflation / 100)) - 1
+        real_return = ((1 + post_retirement_return) / (1 + inflation)) - 1
 
         # Calculate required retirement corpus (PV of annuity due)
         retirement_years = life_expectancy - retirement_age

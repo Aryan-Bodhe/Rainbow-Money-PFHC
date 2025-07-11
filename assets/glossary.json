@@ -1,8 +1,8 @@
 {
   "savings_income_ratio": {
     "term": "Savings-Income Ratio",
-    "definition": "The portion of your income you save after covering expenses and investments.",
-    "formula": "(Income − Expenses − EMIs − Investments) ÷ Income",
+    "definition": "The portion of your income you save after covering your expenses.",
+    "formula": "(Income − Expenses − EMIs) ÷ Income",
     "significance": "Shows how disciplined you are at setting aside money for the future."
   },
   "investment_income_ratio": {
@@ -25,13 +25,13 @@
   },
   "emergency_fund_ratio": {
     "term": "Emergency Fund Coverage",
-    "definition": "The number of months your liquid savings can cover your expenses.",
+    "definition": "The number of months your emergency fund can cover your expenses.",
     "formula": "Liquid Assets ÷ Monthly Expenses",
     "significance": "Ensures you have a cushion in case of unexpected financial shocks."
   },
   "liquidity_ratio": {
     "term": "Liquidity Coverage",
-    "definition": "How many months you can live on cash and easily sold assets.",
+    "definition": "The number of months your savings balacne can cover your expenses.",
     "formula": "(Cash + Savings + Other Liquid Assets) ÷ Monthly Expenses",
     "significance": "Measures short‑term financial resilience."
   },
@@ -43,7 +43,7 @@
   },
   "housing_income_ratio": {
     "term": "Housing Cost Ratio",
-    "definition": "The percentage of your income spent on housing (rent or mortgage).",
+    "definition": "The percentage of your income spent on housing (rent, maintainance).",
     "formula": "Housing Payments ÷ Income",
     "significance": "Helps ensure your housing remains affordable."
   },
@@ -64,12 +64,6 @@
     "definition": "Your net worth compared to your annual income.",
     "formula": "(Assets − Liabilities) ÷ (Income × 12)",
     "significance": "Shows wealth accumulation relative to earnings."
-  },
-  "target_retirement_corpus": {
-    "term": "Retirement Target Corpus",
-    "definition": "The amount you need to save by retirement to maintain your lifestyle.",
-    "formula": "Computed by considering inflation, estimated retirement returns, and expected monthly expenses.",
-    "significance": "Sets the savings target for a comfortable post‑work life."
   },
   "retirement_adequacy": {
     "term": "Retirement Adequacy",

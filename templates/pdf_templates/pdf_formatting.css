@@ -47,7 +47,7 @@ p {
 /* Ordered lists (numbered) */
 ol {
   margin-left: 0;
-  padding-left: 1.6em; /* Controls space from left edge to numbers */
+  padding-left: 2em; /* Controls space from left edge to numbers */
 }
 
 /* List items inside <ol> */
@@ -137,3 +137,7 @@ table {
   color: #0b3d91;
 }
 
+.page-break {
+  page-break-before: always;   /* for many engines */
+  break-before: page;          /* modern standard */
+}

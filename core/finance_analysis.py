@@ -24,15 +24,15 @@ class FinancialAnalysisEngine:
         self.header_templates = HEADER_TEMPLATES
 
     def analyse(self, user_profile: UserProfile, pfm: PersonalFinanceMetrics, benchmark_data: BenchmarkData):
-        judged_metrics = self.generate_metric_verdicts(pfm, benchmark_data)
+        pfm = self.generate_metric_verdicts(pfm, benchmark_data)
         with open('temp1.json', 'w') as f:
-            json.dump(judged_metrics.model_dump(), f, indent=2)
+            json.dump(pfm.model_dump(), f, indent=2)
 
-        scored_metrics = self.score_metrics(judged_metrics, benchmark_data)
+        pfm = self.score_metrics(pfm, benchmark_data)
         with open('temp2.json', 'w') as f:
-            json.dump(scored_metrics.model_dump(), f, indent=2)
+            json.dump(pfm.model_dump(), f, indent=2)
 
-        feedback_data = self.generate_feedbacks(user_profile, scored_metrics, benchmark_data)
+        feedback_data = self.generate_feedbacks(user_profile, pfm, benchmark_data)
         return feedback_data
 
     def filter_metrics_by_names(self):
@@ -50,7 +50,7 @@ class FinancialAnalysisEngine:
             raise ValueError("Metrics not Provided.")
 
         benchmarks = benchmark_data.model_dump()
-        metrics = pfm.model_copy(deep=True)
+        metrics = pfm
 
         low_relax_stage_1 = 0.85
         high_relax_stage_1 = 1.15
@@ -94,8 +94,16 @@ class FinancialAnalysisEngine:
         mode = 'good' if metric.verdict in self.good_labels else 'bad'
         if metric.metric_name == 'asset_allocation':
             return self.analyse_asset_allocation()
+        
         if metric.metric_name.endswith('ratio'):
-            tmpl = self.header_templates['ratio_headers'][mode]
+            if mode == 'bad':
+                if metric.verdict in ['extremely_low', 'low']:
+                    tmpl = self.header_templates['ratio_headers'][mode]['low']
+                else:
+                    tmpl = self.header_templates['ratio_headers'][mode]['high']
+            else:
+                tmpl = self.header_templates['ratio_headers'][mode]
+            
         elif metric.metric_name.endswith('adequacy'):
             tmpl = self.header_templates['adequacy_headers'][mode]
         else:
@@ -103,7 +111,6 @@ class FinancialAnalysisEngine:
         tmp = choice(tmpl)    
         metric_name_readable = ' '.join(metric.metric_name.split(sep='_')).title()
         header = tmp.format(metric_name=metric_name_readable)
-        # print(header)
         return header
     
     def generate_feedbacks(
@@ -150,7 +157,7 @@ class FinancialAnalysisEngine:
         # metric: Metric = getattr(self.derived_metrics, metric_name)
         min_b, max_b = getattr(self.benchmark_data, metric.metric_name)
         formatted = self._get_formatted_commend_point(metric, min_b, max_b)
-        # print(formatted)
+        
         return CommendablePoint(
             metric_name=metric.metric_name,
             header=self._generate_feedback_header(metric),
@@ -163,7 +170,7 @@ class FinancialAnalysisEngine:
 
         gap_amt = self._compute_gap(metric, min_b, max_b)
         formatted = self._get_formatted_improvement_point(metric, gap_amt, min_b, max_b)
-        # formatted = self._format_feedback(template, metric.value, min_b, max_b, gap)
+        label = 'low' if metric.value < min_b else 'high'
         return ImprovementPoint(
             metric_name=metric.metric_name,
             header=self._generate_feedback_header(metric),
@@ -181,7 +188,8 @@ class FinancialAnalysisEngine:
             'assets': self.derived_metrics.total_assets,
             'liabilities': self.derived_metrics.total_liabilities,
             'total_medical_cover': self.user_profile.insurance_data.total_medical_cover,
-            'total_term_cover': self.user_profile.insurance_data.total_term_cover
+            'total_term_cover': self.user_profile.insurance_data.total_term_cover,
+            'family_size': self.user_profile.personal_data.no_of_dependents + 1
         }
         MIN_THRESH = 1000
         try:
@@ -189,21 +197,39 @@ class FinancialAnalysisEngine:
                 'savings_income_ratio','investment_income_ratio',
                 'expense_income_ratio','housing_income_ratio'
             }:
-                gap_vals = [abs((min_b - metric.value)*base['income']), abs((max_b - metric.value)*base['income'])]
+                gap_vals = [
+                    abs((min_b - metric.value)*base['income']), 
+                    abs((max_b - metric.value)*base['income'])
+                ]
             elif metric.metric_name in {'emergency_fund_ratio','liquidity_ratio'}:
-                gap_vals = [abs((min_b - metric.value)*base['expense']), abs((max_b - metric.value)*base['expense'])]
+                gap_vals = [
+                    abs((min_b - metric.value)*base['expense']), 
+                    abs((max_b - metric.value)*base['expense'])
+                ]
             elif metric.metric_name == 'retirement_adequacy':
                 years_left = self.user_profile.personal_data.expected_retirement_age - self.user_profile.personal_data.age
                 monthly_factor = max(1, 12 * years_left)
-                gap_vals = [abs((min_b - metric.value)*base['corpus']) / monthly_factor, abs((max_b - metric.value)*base['corpus']) / monthly_factor] 
+                gap_vals = [
+                    abs((min_b - metric.value)*base['corpus']) / monthly_factor, 
+                    abs((max_b - metric.value)*base['corpus']) / monthly_factor
+                ] 
             elif metric.metric_name == 'asset_liability_ratio':
                 low_liab = base['assets']/ (min_b or 1)
                 high_liab= base['assets']/ (max_b or 1)
-                gap_vals = [abs(base['liabilities'] - low_liab), abs(base['liabilities'] - high_liab)]
+                gap_vals = [
+                    abs(base['liabilities'] - low_liab), 
+                    abs(base['liabilities'] - high_liab)
+                ]
             elif metric.metric_name == 'health_insurance_adequacy':
-                gap_vals = [abs(1 - metric.value) * MEDICAL_COVER_FACTOR]
+                gap_vals = [
+                    abs(base['total_medical_cover'] - min_b * base['family_size'] * MEDICAL_COVER_FACTOR),
+                    abs(base['total_medical_cover'] - max_b * base['family_size'] * MEDICAL_COVER_FACTOR)
+                ]
             elif metric.metric_name == 'term_insurance_adequacy':
-                gap_vals = [abs(1 - metric.value) * TERM_COVER_FACTOR]
+                gap_vals = [
+                    abs(base['total_term_cover'] - min_b * 12 * base['income'] * TERM_COVER_FACTOR),
+                    abs(base['total_term_cover'] - max_b * 12 * base['income'] * TERM_COVER_FACTOR)
+                ]
                 
             else:
                 return MIN_THRESH
@@ -239,6 +265,19 @@ class FinancialAnalysisEngine:
         curr_scnr = template.get('current_scenario')
         action = template.get('actionable')
         places = re.findall(r'{(\w+)[^}]*}', action)
+        user_val = metric.value
+
+        if metric.metric_name == 'health_insurance_adequacy':
+            factor = (1 + self.user_profile.personal_data.no_of_dependents) * MEDICAL_COVER_FACTOR
+            min_b = min_b * factor
+            max_b = max_b * factor
+            user_val = self.user_profile.insurance_data.total_medical_cover
+        elif metric.metric_name == 'term_insurance_adequacy':
+            inc_factor = (self.derived_metrics.total_monthly_income) * 12 * TERM_COVER_FACTOR
+            min_b = min_b * inc_factor
+            max_b = max_b * inc_factor
+            user_val = self.user_profile.insurance_data.total_term_cover
+
         ctx = {
             'gap_amt': gap_amt,
             'min_val': min_b,
@@ -249,7 +288,7 @@ class FinancialAnalysisEngine:
 
         
         return {
-            'current_scenario': curr_scnr.format(user_value=metric.value),
+            'current_scenario': curr_scnr.format(user_value=user_val),
             'actionable': action.format_map(filtered_ctx)
         }
 
@@ -261,6 +300,7 @@ class FinancialAnalysisEngine:
         max_b: float,
         gap: float = None
     ) -> dict[str, str]:
+        raise DeprecationWarning('Use individual format methods.')
         ctx = {'user_value': value, 'benchmark_min': min_b, 'benchmark_max': max_b}
         if gap is not None and '{gap_amt' in tpl.get('actionable', ''):
             ctx['gap_amt'] = gap
@@ -302,12 +342,12 @@ class FinancialAnalysisEngine:
         benchmark_data: BenchmarkData,
     ) -> PersonalFinanceMetrics:
 
-        pfm = metrics.model_copy(deep=True)
+        pfm = metrics
         # tier_key = f"Tier {pfm.city_tier}"
         # bracket = classify_income_bracket(pfm.total_monthly_income)
 
         for metric_name in metrics.model_fields:
-            if not metric_name.endswith('ratio') or metric_name.endswith('adequacy'):
+            if not (metric_name.endswith('ratio') or metric_name.endswith('adequacy')):
                 continue
             benchmark = getattr(benchmark_data, metric_name)
             if benchmark is None:
@@ -333,7 +373,7 @@ class FinancialAnalysisEngine:
         val = metric.value
         if val is None or max_score == 0:
             return 0.0
-        if ideal_min <= val <= ideal_max:
+        if ideal_min <= val <= ideal_max or val == 999:
             return max_score
         ratio = val / ideal_min if val < ideal_min else ideal_max / val
-        return max_score * (0.2 + 0.8 * max(0.0, min(1.0, ratio)))
+        return max_score * (0.1 + 0.9 * max(0.0, min(1.0, ratio)))

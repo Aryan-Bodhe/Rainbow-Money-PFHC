@@ -77,8 +77,8 @@ AREAS_FOR_IMPROVEMENT = {
 
     "health_insurance_adequacy": {
         "extremely_low": {
-            "current_scenario": "Your health cover of ₹{user_value:,.0f} is dangerously insufficient.",
-            "actionable": "Increase it by ₹{gap_amt:,.0f} to meet the benchmark of ₹{min_val:,.0f}."
+            "current_scenario": "Your health cover of ₹{user_value:,.0f} is insufficient given your family size.",
+            "actionable": "Increase it by ₹{gap_amt:,.0f} to meet the minimum requirement of ₹{min_val:,.0f}."
         },
         "low": {
             "current_scenario": "You may be underinsured with only ₹{user_value:,.0f} of health cover.",
@@ -96,7 +96,7 @@ AREAS_FOR_IMPROVEMENT = {
 
     "term_insurance_adequacy": {
         "extremely_low": {
-            "current_scenario": "You have zero or negligible term insurance (₹{user_value:,.0f}).",
+            "current_scenario": "Your term insurance of ₹{user_value:,.0f} is very low, leaving loved ones underprotected.",
             "actionable": "Secure your family by adding at least ₹{gap_amt:,.0f} to reach ₹{min_val:,.0f} coverage."
         },
         "low": {
@@ -158,7 +158,7 @@ AREAS_FOR_IMPROVEMENT = {
         },
         "low": {
             "current_scenario": "You’re saving {user_value:.0%} of your income.",
-            "actionable": "Aim to boost savings by ₹{gap_amt:,.0f} to enter the ideal {min_val:.0%}–{max_val:.0%} band."
+            "actionable": "Aim to boost savings by ₹{gap_amt:,3.0f} to enter the ideal {min_val:.0%}–{max_val:.0%} band."
         },
         "high": {
             "current_scenario": "Your savings rate is {user_value:.0%}, slightly above target.",
@@ -166,7 +166,7 @@ AREAS_FOR_IMPROVEMENT = {
         },
         "extremely_high": {
             "current_scenario": "You’re saving {user_value:.0%} of income–perhaps too much.",
-            "actionable": "Ensure you balance savings with lifestyle; consider utilising ₹{gap_amt:,.0f} for personal goals, investing, or debt reduction."
+            "actionable": "Ensure that you balance savings with lifestyle; consider utilising ₹{gap_amt:,.0f} for personal goals, investing, or debt reduction."
         },
     },
 
@@ -200,7 +200,7 @@ AREAS_FOR_IMPROVEMENT = {
         },
         "high": {
             "current_scenario": "Expenses are {user_value:.0%} of income—above ideal.",
-            "actionable": "Cut down expenses (possibly discretionary) by ₹{gap_amt:,.0f} to reach {max_val:.0%}."
+            "actionable": "Cut down monthly expenses by ₹{gap_amt:,.0f} to reach {max_val:.0%}."
         },
         "extremely_high": {
             "current_scenario": "You’re spending {user_value:.0%} of income—very high.",
@@ -210,20 +210,20 @@ AREAS_FOR_IMPROVEMENT = {
 
     "debt_income_ratio": {
         "extremely_low": {
-            "current_scenario": "Your debt is {user_value:.0%} of income—almost zero, risky if leveraging credit.",
-            "actionable": "Consider safe leverage up to {min_val:.0%} for growth, if appropriate."
+            "current_scenario": "Your debt is {user_value:.0%} of income—almost zero, which is excellent.",
+            "actionable": "You may consider safe debt leverage for growth, if appropriate."
         },
         "low": {
             "current_scenario": "Debt stands at {user_value:.0%} of income.",
-            "actionable": "It’s healthy but you could use up to {max_val:.0%} for strategic borrowing."
+            "actionable": "It’s healthy and reduces financial strain–keep it up!."
         },
         "high": {
             "current_scenario": "Your debt is {user_value:.0%} of income—above target.",
-            "actionable": "Pay down ₹{gap_amt:,.0f} to fall within the {min_val:.0%}–{max_val:.0%} guideline."
+            "actionable": "Consider repaying debts as soon as possible to fall within the {min_val:.0%}–{max_val:.0%} guideline."
         },
         "extremely_high": {
             "current_scenario": "Debt at {user_value:.0%} of income is very high.",
-            "actionable": "Focus on repaying ₹{gap_amt:,.0f} urgently to reduce financial strain."
+            "actionable": "Focus on repaying high-value debts urgently using snowballing technique to reduce financial strain."
         },
     },
 }

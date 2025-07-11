@@ -102,9 +102,9 @@
     "significance": "Shows wealth accumulation relative to earnings."
   },
   "target_retirement_corpus": {
-    "term": "Retirement Goal",
+    "term": "Retirement Target Corpus",
     "definition": "The amount you need to save by retirement to maintain your lifestyle.",
-    "formula": "Projected annual retirement expenses × Years expected in retirement",
+    "formula": "Computed by considering inflation, estimated retirement returns, and expected monthly expenses.",
     "significance": "Sets the savings target for a comfortable post‑work life."
   },
   "retirement_adequacy": {

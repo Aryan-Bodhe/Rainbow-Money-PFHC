@@ -267,18 +267,19 @@ async def runLLMTest(user_profile_path: str):
         print('-----------------------------------------------------------')
 
 
-async def runLLMTestCollection():
-    tests = [
-        VERY_POOR_PROFILE,
-        POOR_PROFILE,
-        AVERAGE_PROFILE,
-        GOOD_PROFILE,
-        VERY_GOOD_PROFILE
-    ]
+async def runTestCollection():
+    tests = {
+        VERY_POOR_PROFILE: 'very_poor',
+        POOR_PROFILE: 'poor',
+        AVERAGE_PROFILE: 'average',
+        GOOD_PROFILE: 'good',
+        VERY_GOOD_PROFILE : 'very_good'
+    }
 
-    for test in tests:
-        await runLLMTest(user_profile_path=test)
-        print('Analysis completed')
+    for input, output in tests.items():
+        rp = f'temp/{output}.pdf'
+        await runStaticTest(user_path=input, report_path=rp)
+        print('--> Analysis completed')
 
 
 def assign_weights(pfm: PersonalFinanceMetrics, weights: dict):
@@ -287,12 +288,13 @@ def assign_weights(pfm: PersonalFinanceMetrics, weights: dict):
         setattr(metric_data, 'weight', wt)
 
 
-async def runStaticTest():
+async def runStaticTest(user_path: str = None, report_path: str = None):
     os.system('clear')
     console = Console()
+    timeStart = time.perf_counter()
     print('--> Starting PFHC Analysis.')
 
-    raw_data = read_json_from_file(AVERAGE_PROFILE)
+    raw_data = read_json_from_file(user_path)
     user_profile = set_user_data(raw_data)
 
     pfmc = PersonalFinanceMetricsCalculator()
@@ -302,40 +304,95 @@ async def runStaticTest():
     with open('temp/static_test_data/user_profile.json', 'w') as f:
         json.dump(user_profile.model_dump(), f, indent=2)
 
-    with open('temp/static_test_data/metric_data.json', 'w') as f:
-        json.dump(derived_metrics.model_dump(), f, indent=2)
+    # with open('temp/static_test_data/metric_data.json', 'w') as f:
+    #     json.dump(derived_metrics.model_dump(), f, indent=2)
 
-    with open('temp/static_test_data/benchmark_data.json', 'w') as f:
-        json.dump(benchmark_data.model_dump(), f, indent=2)
+    # with open('temp/static_test_data/benchmark_data.json', 'w') as f:
+    #     json.dump(benchmark_data.model_dump(), f, indent=2)
 
     print('--> PFHC Computation complete.')
-    print('\n-----------------------------------------------------\n')
+    print('-----------------------------------------------------')
     
-    print('--> Starting LLM Analysis.')
+    print('--> Starting Weightage Deduction.')
     llm = TogetherLLM(llm_model='LG_Exaone_3.5_Instruct', temperature=1)
     personal_data_json = user_profile.personal_data.model_dump_json()
 
     weight_data = await llm.generate_weights_using_llm(personal_data_json, advanced=False)
 
+
     weights = post_process_weights(weight_data['response'])
     perf_data = weight_data['perf_data']
 
-    print('\n-----------------------------------------------------\n')
-    console.print("[bold yellow]LLM Performance Data:[/]")
+    print('-----------------------------------------------------')
+    console.print("[bold yellow]LLM Performance Data: Weight Generation[/]")
     console.print_json(data=perf_data)
-    print('\n-----------------------------------------------------\n')
+    print('-----------------------------------------------------')
 
     assign_weights(derived_metrics, weights)
 
     financial_analysor = FinancialAnalysisEngine()
-    results = financial_analysor.analyse(user_profile, derived_metrics, benchmark_data)
+    feedback_data = financial_analysor.analyse(user_profile, derived_metrics, benchmark_data)
 
-    console.print("[bold yellow]Financial Analysis results:[/]")
-    console.print_json(json=results.model_dump_json(), indent=2)
+    # console.print("[bold yellow]Financial Analysis results:[/]")
+    # console.print_json(json=feedback_data.model_dump_json(), indent=2)
     print('--> PFHC Analysis Complete.')
+    print('-----------------------------------------------------')
+    print('--> Creating Report Data.')
+    derived_metrics_json = derived_metrics.model_dump_json()
+    benchmark_data_json = derived_metrics.model_dump_json()
+    feedback_data_json = feedback_data.model_dump_json()
 
+    review_data, summary_data = await asyncio.gather(
+        llm.generate_report_part(
+            PROFILE_REVIEW_SYS_MSG, 
+            PROFILE_REVIEW_USER_MSG, 
+            advanced=False,
+            personal_data=personal_data_json, 
+            derived_metrics=derived_metrics_json, 
+            benchmark_data=benchmark_data_json
+        ),
+        llm.generate_report_part(
+            SUMMARY_GENERATION_SYS_MSG, 
+            SUMMARY_GENERATION_USER_MSG,
+            advanced=False,
+            overall_profile_review='',
+            commendable_areas='',
+            areas_for_improvement=feedback_data_json
+        )   
+    )
+
+    review = review_data['response'].get("overall_profile_review")
+    summary = summary_data['response'].get("summary")
+
+    review_perf = review_data['perf_data']
+    summary_perf = summary_data['perf_data']
+
+    print('-----------------------------------------------------')
+    console.print("[bold yellow]LLM Performance Data: Review Generation[/]")
+    console.print_json(data=review_perf)
+    print('-----------------------------------------------------')
+    console.print("[bold yellow]LLM Performance Data: Summary Generation[/]")
+    console.print_json(data=summary_perf)
+    print('-----------------------------------------------------')
+
+    pdf_generator = PDFGenerator()
+    pdf_generator.generate_pdf(derived_metrics, benchmark_data, feedback_data, review, summary, output_pdf=report_path)
+    print('--> PDF Generation Complete.')
+    print('-----------------------------------------------------')
+
+    timeEnd = time.perf_counter()
+    total_ex_time = round(timeEnd-timeStart, 2)
+    if int(total_ex_time / 60) == 0:
+        console.print(f"\n[bold green]Total Execution Runtime: {total_ex_time:0.2f} secs.")
+    else:
+        console.print(f"\n[bold green]Total Execution Runtime: {int(total_ex_time / 60)} min {total_ex_time % 60:0.2f} secs.")
+
+    print('\n-----------------------------------------------------')
 
 
 if __name__ == "__main__":
-    # asyncio.run(runTestCollection())
-    asyncio.run(runStaticTest())
+    asyncio.run(runTestCollection())
+    # asyncio.run(runStaticTest())
+
+
+    ### ASK WHY SELECTED?

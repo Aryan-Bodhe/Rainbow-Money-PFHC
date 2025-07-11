@@ -1,7 +1,7 @@
 COMMENDABLE_AREAS = {
     "emergency_fund_ratio": {
         "excellent": {
-            "current_scenario": "Your emergency fund covers {user_value:.1f} months of expenses. Great job maintaining strong financial safety!"
+            "current_scenario": "Your emergency fund covers {user_value:.1f} months of expenses, providing a strong financial safety net!"
         },
         "good": {
             "current_scenario": "Your emergency fund covers {user_value:.1f} months—fairly close to the ideal range. Keep building for better protection."
@@ -28,7 +28,7 @@ COMMENDABLE_AREAS = {
             "current_scenario": "You're spending {user_value:.0%} on housing—well within the healthy range."
         },
         "good": {
-            "current_scenario": "You're spending {user_value:.0%} on housing—fairly close to ideal. Stay on track!"
+            "current_scenario": "You're spending only {user_value:.0%} of your income on housing—fairly close to ideal. Stay on track!"
         }
     },
     "health_insurance_adequacy": {
@@ -76,7 +76,7 @@ COMMENDABLE_AREAS = {
             "current_scenario": "Investing {user_value:.0%} of income—excellent for long-term success."
         },
         "good": {
-            "current_scenario": "Investing {user_value:.0%}—close to optimal. A bit more consistency helps."
+            "current_scenario": "Investing {user_value:.0%}—fairly close to optimal. Keep up the consistency."
         }
     },
     "expense_income_ratio": {

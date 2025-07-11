@@ -1,11 +1,19 @@
 HEADER_TEMPLATES = {
-    'ratio_headers': {
-        'bad': [
-            "High {metric_name}",
-            "Low {metric_name}",
-            "{metric_name} Critically Low",
-            "Excessive {metric_name}",
-        ],
+    "ratio_headers": {
+        "bad": {
+            "high": [
+                "High {metric_name}",
+                "Excessive {metric_name}",
+                "Above normal {metric_name}",
+                "Higher than ideal {metric_name}"
+            ],
+            "low": [
+                "Low {metric_name}",
+                "{metric_name} very low",
+                "Below average {metric_name}",
+                "Lower than ideal {metric_name}"
+            ]
+        },
         'good': [
             "Good {metric_name}",
             "Optimal {metric_name}",

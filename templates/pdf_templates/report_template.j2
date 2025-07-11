@@ -8,8 +8,12 @@
   <ol>
   {% for area in commendable_areas %}
     <li>
-      <strong>{{ area.header }}</strong><br>
-      <div style="margin-left: 1.5em;">{{ area.content }}</div>
+    <strong>{{ area.header }}</strong><br>
+       <div style="margin-left: 0.5em;">
+        <ul>
+          <li><p>{{ area.current_scenario }}</p></li>
+        </ul>
+      </div>
     </li>
   {% endfor %}
   </ol>
@@ -39,14 +43,16 @@
 <h2>D. Summary</h2>
 <p>{{ summary }}</p>
 
+<div class="page-break"></div>
+
 <h2>E. Glossary</h2>
 {% if glossary %}
 <ol>
   {% for var, info in glossary.items() %}
   <li>
     <h3>{{ info.term }}</h3>
+    <blockquote> {{ info.definition }}</blockquote>
     <ul style="margin-left:1em; list-style-type:disc;">
-      <li><blockquote> {{ info.definition }}</blockquote></li>
       <li><strong>Formula:</strong> {{ info.formula }}</li>
       <li><strong>Significance:</strong> {{ info.significance }}</li>
     </ul>
