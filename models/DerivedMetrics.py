@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class Metric(BaseModel):
     metric_name: Optional[str] = None
     value: Optional[float] = None
+    benchmark: Optional[tuple] = None
     verdict: Optional[str] = None
     weight: Optional[float] = None
     assigned_score: Optional[float] = None

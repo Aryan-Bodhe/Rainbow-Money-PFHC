@@ -1,8 +1,8 @@
 from core.exceptions import UserProfileNotProvidedError, InvalidFinanceParameterError
+from data.ideal_benchmark_data import IDEAL_RANGES
 from models.UserProfile import UserProfile
 from models.DerivedMetrics import PersonalFinanceMetrics, Metric
-from .user_segment_classifier import classify_city_tier
-from .benchmarking import analyse_metrics_against_benchmarks
+from .user_segment_classifier import classify_city_tier, classify_income_bracket
 from config.config import (
     ANNUAL_INFLATION_RATE, 
     AVG_LIFE_EXPECTANCY, 
@@ -25,7 +25,7 @@ class PersonalFinanceMetricsCalculator:
         self.total_liabilities = 0
 
 
-    def analyze_user_profile(self, user_profile: UserProfile):
+    def compute_personal_finance_metrics(self, user_profile: UserProfile):
         self._set_user_profile(user_profile)
         metrics = PersonalFinanceMetrics()
 
@@ -69,10 +69,35 @@ class PersonalFinanceMetricsCalculator:
                 value = 999
 
             value = round(value, 2)
-            metric_obj = Metric(metric_name=key, value=value)
+            bm = self._get_benchmark_for_metric(key, metrics)
+            metric_obj = Metric(metric_name=key, value=value, benchmark=bm)
             setattr(metrics, key, metric_obj)
 
         return metrics
+    
+    
+    def _get_benchmark_for_metric(self, metric_name: str, pfm: PersonalFinanceMetrics) -> tuple:
+        """
+        Sets the benchmark (min, max) for a single Metric object based on the user's city tier and income bracket.
+        """
+        if not metric_name:
+            return
+
+        tier_key = f"Tier {pfm.city_tier}"
+        bracket = classify_income_bracket(pfm.total_monthly_income)
+
+        ideal = IDEAL_RANGES.get(metric_name)
+        if ideal is None:
+            return  # No benchmark defined
+
+        if isinstance(ideal, dict):
+            min_i, max_i = ideal.get(tier_key, {}).get(bracket, (None, None))
+        else:
+            min_i, max_i = ideal
+
+        if min_i is not None and max_i is not None:
+            return (min_i, max_i)
+        return None
 
 
     def _set_user_profile(self, user_profile: UserProfile):

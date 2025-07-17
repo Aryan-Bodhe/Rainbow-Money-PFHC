@@ -1,73 +1,123 @@
-from models.BenchmarkData import BenchmarkData
+import re
+import json
+from random import choice
+from typing import List, Union
+
+from core.user_segment_classifier import classify_income_bracket
+from data.ideal_benchmark_data import IDEAL_RANGES
 from models.DerivedMetrics import PersonalFinanceMetrics, Metric
-from models.FeedbackData import FeedbackData, CommendablePoint, ImprovementPoint
+from models.ReportData import CommendablePoint, ImprovementPoint, ReportData
 from models.UserProfile import UserProfile
+from config.config import MEDICAL_COVER_FACTOR, TERM_COVER_FACTOR, SCORING_BASE_VALUE
 from core.exceptions import FeedbackGenerationFailedError
 from templates.feedback_templates.areas_for_improvement_templates import AREAS_FOR_IMPROVEMENT
 from templates.feedback_templates.commendable_areas_template import COMMENDABLE_AREAS
 from templates.feedback_templates.header_templates import HEADER_TEMPLATES
-from random import choice
-from typing import Union
-from data.ideal_benchmark_data import IDEAL_RANGES
-from .user_segment_classifier import classify_income_bracket, classify_city_tier
-import json
-import re
-from config.config import MEDICAL_COVER_FACTOR, TERM_COVER_FACTOR
 
 class FinancialAnalysisEngine:
     def __init__(self):
         self.user_profile: UserProfile = None
         self.derived_metrics: PersonalFinanceMetrics = None
-        self.benchmark_data: BenchmarkData = None
         self.good_labels = ['good', 'excellent']
         self.bad_labels = ['extremely_low', 'extremely_high', 'low', 'high']
         self.header_templates = HEADER_TEMPLATES
 
-    def analyse(self, user_profile: UserProfile, pfm: PersonalFinanceMetrics, benchmark_data: BenchmarkData):
-        pfm = self.generate_metric_verdicts(pfm, benchmark_data)
-        with open('temp1.json', 'w') as f:
-            json.dump(pfm.model_dump(), f, indent=2)
+    def analyse(self, user_profile: UserProfile, pfm: PersonalFinanceMetrics):
+        pfm = self._get_benchmarks(pfm)
+        pfm = self._generate_metric_verdicts(pfm)
+        pfm = self._score_metrics(pfm)
 
-        pfm = self.score_metrics(pfm, benchmark_data)
-        with open('temp2.json', 'w') as f:
-            json.dump(pfm.model_dump(), f, indent=2)
+        commendable_points, improvement_points = self._generate_feedbacks(user_profile, pfm)
+        metrics_table = self.get_metrics_scoring_table(pfm)
+        
+        return ReportData(
+            commendable_areas=commendable_points,
+            areas_for_improvement=improvement_points,
+            metrics_scoring_table=metrics_table
+        )
 
-        feedback_data = self.generate_feedbacks(user_profile, pfm, benchmark_data)
-        return feedback_data
+    def _get_benchmarks(self, pfm: PersonalFinanceMetrics) -> PersonalFinanceMetrics:
+        """
+        Returns a dict mapping each metric to its ideal (min, max) benchmark values based on the user's profile.
+        """
+        tier_key = f"Tier {pfm.city_tier}"
+        bracket = classify_income_bracket(pfm.total_monthly_income)
 
-    def filter_metrics_by_names(self):
+        for metric, ideal in IDEAL_RANGES.items():
+            if isinstance(ideal, dict):
+                min_i, max_i = ideal[tier_key][bracket]
+            else:
+                min_i, max_i = ideal
+            if hasattr(pfm, metric):
+                met = getattr(pfm, metric)
+                setattr(met, 'benchmark', (min_i, max_i))
+
+        return pfm
+
+    def _filter_metrics_by_names(self):
         comm_metrics, impr_metrics = [], []
-        for name, metric in self.derived_metrics.model_dump().items():
-            if isinstance(metric, dict) and 'verdict' in metric:
-                if metric['verdict'] in self.good_labels:
-                    comm_metrics.append(name)
-                elif metric['verdict'] in self.bad_labels:
-                    impr_metrics.append(name)
+        # Only check your assessment fields
+        assessment_fields = [
+            'savings_income_ratio', 'investment_income_ratio', 'expense_income_ratio',
+            'debt_income_ratio', 'emergency_fund_ratio', 'liquidity_ratio',
+            'asset_liability_ratio', 'housing_income_ratio',
+            'health_insurance_adequacy', 'term_insurance_adequacy',
+            'net_worth_adequacy', 'retirement_adequacy'
+        ]
+
+        for name in assessment_fields:
+            metric_obj = getattr(self.derived_metrics, name, None)
+            if not isinstance(metric_obj, Metric) or not metric_obj.verdict:
+                continue
+            if metric_obj.verdict in self.good_labels:
+                comm_metrics.append(name)
+            elif metric_obj.verdict in self.bad_labels:
+                impr_metrics.append(name)
+
         return comm_metrics, impr_metrics
 
-    def generate_metric_verdicts(self, pfm: PersonalFinanceMetrics, benchmark_data: BenchmarkData):
+    def _generate_metric_verdicts(
+        self,
+        pfm: PersonalFinanceMetrics
+    ) -> PersonalFinanceMetrics:
         if pfm is None:
-            raise ValueError("Metrics not Provided.")
+            raise ValueError("Metrics not provided.")
 
-        benchmarks = benchmark_data.model_dump()
-        metrics = pfm
-
+        # Relaxation thresholds
         low_relax_stage_1 = 0.85
         high_relax_stage_1 = 1.15
         low_relax_stage_2 = 0.7
         high_relax_stage_2 = 1.3
 
-        for key, (bm_low, bm_high) in benchmarks.items():
-            metric_obj = getattr(metrics, key, None)
+        # Only these fields need assessment
+        assessment_fields = [
+            'savings_income_ratio', 'investment_income_ratio', 'expense_income_ratio',
+            'debt_income_ratio', 'emergency_fund_ratio', 'liquidity_ratio',
+            'asset_liability_ratio', 'housing_income_ratio',
+            'health_insurance_adequacy', 'term_insurance_adequacy',
+            'net_worth_adequacy', 'retirement_adequacy'
+        ]
 
+        for field in assessment_fields:
+            metric_obj: Metric = getattr(pfm, field, None)
             if not isinstance(metric_obj, Metric):
-                continue  # Skip if not a Metric field
+                continue
 
             user_val = metric_obj.value
+            bench = metric_obj.benchmark
+
+            # Handle missing or sentinel values
             if user_val is None or user_val == 999:
                 metric_obj.verdict = "error_computing_metric"
                 continue
 
+            if not bench or len(bench) != 2:
+                metric_obj.verdict = "no_benchmark_provided"
+                continue
+
+            bm_low, bm_high = bench
+
+            # Determine verdict
             if user_val < bm_low * low_relax_stage_2:
                 verdict = "extremely_low"
             elif user_val < bm_low * low_relax_stage_1:
@@ -84,16 +134,11 @@ class FinancialAnalysisEngine:
                 verdict = "extremely_high"
 
             metric_obj.verdict = verdict
-        
-        return metrics
 
-    def analyse_asset_allocation(self) -> str:
-        return 'assets_analysed'
+        return pfm
 
     def _generate_feedback_header(self, metric: Metric) -> str:
         mode = 'good' if metric.verdict in self.good_labels else 'bad'
-        if metric.metric_name == 'asset_allocation':
-            return self.analyse_asset_allocation()
         
         if metric.metric_name.endswith('ratio'):
             if mode == 'bad':
@@ -113,50 +158,64 @@ class FinancialAnalysisEngine:
         header = tmp.format(metric_name=metric_name_readable)
         return header
     
-    def generate_feedbacks(
+    def _generate_feedbacks(
         self,
         user_profile: UserProfile,
         derived_metrics: PersonalFinanceMetrics,
-        benchmark_data: BenchmarkData
-    ) -> FeedbackData:
+    ) -> tuple[List[CommendablePoint], List[ImprovementPoint]]:
         
-        if not all([user_profile, derived_metrics, benchmark_data]):
+        if not all([user_profile, derived_metrics]):
             raise FeedbackGenerationFailedError()
         self.user_profile = user_profile
         self.derived_metrics = derived_metrics
-        self.benchmark_data = benchmark_data
 
         # self.derived_metrics = self.generate_metric_verdicts(self.derived_metrics, self.benchmark_data)
-        good_metrics, bad_metrics = self.filter_metrics_by_names()
+        good_metrics, bad_metrics = self._filter_metrics_by_names()
 
-        good_points = []
+        good_points: List[CommendablePoint] = self._generate_commendable_points(derived_metrics, good_metrics)
+        bad_points: List[ImprovementPoint] = self._generate_improvement_points(derived_metrics, bad_metrics)
+
+        return (good_points, bad_points)
+    
+    def _generate_improvement_points(
+        self,
+        derived_metrics: PersonalFinanceMetrics,
+        bad_metrics: List[str]
+    ) -> List[ImprovementPoint]:
+        
         bad_points = []
+
+        for metric_name in bad_metrics:
+            metric_data = getattr(derived_metrics, metric_name)
+            feedback = self._create_improvement_point(metric_data)
+            bad_points.append((metric_name, feedback))
+
+        sorted_bad  = self._sort_points(bad_points)
+        improvement_points=[pt for _, pt in sorted_bad]
+
+        return improvement_points
+    
+    def _generate_commendable_points(
+        self, 
+        derived_metrics: PersonalFinanceMetrics,
+        good_metrics: List[str]
+    ) -> List[CommendablePoint]:
+        
+        good_points = []
 
         for metric_name in good_metrics:
             metric_data = getattr(derived_metrics, metric_name)
             feedback = self._create_commend_point(metric_data)
             good_points.append((metric_name, feedback))
 
-        for metric_name in bad_metrics:
-            metric_data = getattr(derived_metrics, metric_name)
-            feedback = self._create_improvement_point(metric_data)
-            bad_points.append((metric_name, feedback))
-        
-        # print(good_points)
-        # print(bad_points)
-
         sorted_good = self._sort_points(good_points)
-        sorted_bad  = self._sort_points(bad_points)
+        commendable_points=[pt for _, pt in sorted_good]
 
-        return FeedbackData(
-            commendable_points=[pt for _, pt in sorted_good],
-            improvement_points=[pt for _, pt in sorted_bad]
-        )
+        return commendable_points
 
     def _create_commend_point(self, metric: Metric) -> CommendablePoint:
-        # metric: Metric = getattr(self.derived_metrics, metric_name)
-        min_b, max_b = getattr(self.benchmark_data, metric.metric_name)
-        formatted = self._get_formatted_commend_point(metric, min_b, max_b)
+        min_b, max_b = metric.benchmark
+        formatted = self._get_formatted_commend_point(metric)
         
         return CommendablePoint(
             metric_name=metric.metric_name,
@@ -165,12 +224,11 @@ class FinancialAnalysisEngine:
         )
 
     def _create_improvement_point(self, metric: Metric) -> ImprovementPoint:
-        # metric = getattr(self.derived_metrics, metric.metric_name)
-        min_b, max_b = getattr(self.benchmark_data, metric.metric_name)
+        min_b, max_b = metric.benchmark
 
         gap_amt = self._compute_gap(metric, min_b, max_b)
         formatted = self._get_formatted_improvement_point(metric, gap_amt, min_b, max_b)
-        label = 'low' if metric.value < min_b else 'high'
+
         return ImprovementPoint(
             metric_name=metric.metric_name,
             header=self._generate_feedback_header(metric),
@@ -179,8 +237,12 @@ class FinancialAnalysisEngine:
         )
 
     def _compute_gap(
-        self, metric: Metric, min_b: float, max_b: float
+        self, 
+        metric: Metric, 
+        min_b: float, 
+        max_b: float
     ) -> float:
+        
         base = {
             'income': self.derived_metrics.total_monthly_income,
             'expense': self.derived_metrics.total_monthly_expense + self.derived_metrics.total_monthly_emi,
@@ -237,16 +299,14 @@ class FinancialAnalysisEngine:
         except ZeroDivisionError:
             return MIN_THRESH
 
-    def _get_formatted_commend_point(self, metric: Metric, min_b: float, max_b: float):
+    def _get_formatted_commend_point(self, metric: Metric):
         template = COMMENDABLE_AREAS.get(metric.metric_name)
         if not template:
             return {
                 'current_scenario': 'Metric values are well within ideal ranges. Great work!'
             }
         template = template.get(metric.verdict)
-        # print(template)
         curr_scnr = template.get('current_scenario')
-        # print(curr_scnr)
 
         return {
             'current_scenario': curr_scnr.format(user_value=metric.value)
@@ -292,31 +352,6 @@ class FinancialAnalysisEngine:
             'actionable': action.format_map(filtered_ctx)
         }
 
-    def _format_feedback(
-        self,
-        tpl: dict[str, str],
-        value: float,
-        min_b: float,
-        max_b: float,
-        gap: float = None
-    ) -> dict[str, str]:
-        raise DeprecationWarning('Use individual format methods.')
-        ctx = {'user_value': value, 'benchmark_min': min_b, 'benchmark_max': max_b}
-        if gap is not None and '{gap_amt' in tpl.get('actionable', ''):
-            ctx['gap_amt'] = gap
-        try:
-            current = tpl['current_scenario'].format(user_value=value)
-            actionable_template = tpl.get('actionable', '')
-            actionable = actionable_template.format(
-                **{k: v for k, v in ctx.items() if f'{{{k}' in actionable_template}
-            )
-            return {'current_scenario': current, 'actionable': actionable}
-        except Exception:
-            return {
-                'current_scenario': 'Unable to generate feedback.',
-                'actionable': 'Please check configuration.'
-            }
-
     def _sort_points(
         self, 
         named_points: list[tuple[str, Union[CommendablePoint, ImprovementPoint]]]
@@ -336,20 +371,17 @@ class FinancialAnalysisEngine:
         order = {m:i for i,m in enumerate(priority)}
         return sorted(named_points, key=lambda x: order.get(x[0], len(order)))
 
-    def score_metrics(
+    def _score_metrics(
         self,
         metrics: PersonalFinanceMetrics,
-        benchmark_data: BenchmarkData,
     ) -> PersonalFinanceMetrics:
 
         pfm = metrics
-        # tier_key = f"Tier {pfm.city_tier}"
-        # bracket = classify_income_bracket(pfm.total_monthly_income)
 
         for metric_name in metrics.model_fields:
             if not (metric_name.endswith('ratio') or metric_name.endswith('adequacy')):
                 continue
-            benchmark = getattr(benchmark_data, metric_name)
+            benchmark = getattr(getattr(metrics, metric_name), 'benchmark')
             if benchmark is None:
                 print(f"[WARNING] Skipping unknown metric for scoring '{metric_name}'")
                 continue
@@ -376,4 +408,43 @@ class FinancialAnalysisEngine:
         if ideal_min <= val <= ideal_max or val == 999:
             return max_score
         ratio = val / ideal_min if val < ideal_min else ideal_max / val
-        return max_score * (0.1 + 0.9 * max(0.0, min(1.0, ratio)))
+        return max_score * (SCORING_BASE_VALUE + (1 - SCORING_BASE_VALUE) * max(0.0, min(1.0, ratio)))
+
+    def get_metrics_scoring_table(self, pfm: PersonalFinanceMetrics) -> list[dict]:
+        """
+        Returns a table of metrics with their weights, benchmarks, values, and scores.
+        """
+        scoring_table = []
+        total_score = 0
+
+        for metric_name in pfm.model_fields:
+            if not (metric_name.endswith('ratio') or metric_name.endswith('adequacy')):
+                continue
+
+            metric: Metric = getattr(pfm, metric_name, None)
+            if not isinstance(metric, Metric):
+                continue
+            
+            total_score += metric.assigned_score
+
+            scoring_table.append({
+                "Metric": metric.metric_name or metric_name,
+                "Weight Assigned": metric.weight,
+                "Benchmark": metric.benchmark,
+                "User Value": metric.value,
+                "Verdict": metric.verdict.capitalize(),
+                "Points Awarded": metric.assigned_score
+            })
+        
+        # Append totals row
+        scoring_table.append({
+            "Metric": 'total',
+            "Weight Assigned": '',
+            "Benchmark": '',
+            "User Value": '',
+            "Verdict": '',
+            "Points Awarded": total_score
+        })
+        
+
+        return scoring_table

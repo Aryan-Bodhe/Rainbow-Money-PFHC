@@ -7,7 +7,7 @@ You are an excellent summarising agent. You will be provided with a user's finan
 SUMMARY_GENERATION_USER_MSG = """
 
 # User profile
-{overall_profile_review}
+{profile_review}
 
 # Commendable Points
 {commendable_areas}

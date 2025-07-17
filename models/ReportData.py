@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+from .DerivedMetrics import PersonalFinanceMetrics
 
 class CommendablePoint(BaseModel):
     metric_name: Optional[str] = None
@@ -12,6 +13,11 @@ class ImprovementPoint(BaseModel):
     current_scenario: Optional[str] = None
     actionable: Optional[str] = None
 
-class FeedbackData(BaseModel):
-    commendable_points: Optional[List[CommendablePoint]] = None
-    improvement_points: Optional[List[ImprovementPoint]] = None
+class ReportData(BaseModel):
+    profile_review: Optional[str] = None
+    commendable_areas: Optional[List[CommendablePoint]] = None
+    areas_for_improvement: Optional[List[ImprovementPoint]] = None
+    summary: Optional[str] = None
+
+    glossary: Optional[dict] = None
+    metrics_scoring_table: Optional[list[dict]] = None
