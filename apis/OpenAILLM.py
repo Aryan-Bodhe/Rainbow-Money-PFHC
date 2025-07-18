@@ -3,7 +3,6 @@ import time
 import asyncio
 from dotenv import load_dotenv
 from typing_extensions import Literal
-from colorama import Fore
 
 from openai import OpenAI
 
@@ -11,10 +10,12 @@ from config.config import LLM_TEMP
 from .LLMResponse import LLMResponse
 from core.exceptions import LLMResponseFailedError, InvalidJsonFormatError
 from utils.response_parsing import parse_llm_output
+from utils.logger import get_logger
 from templates.prompt_templates.weights_generation_template import WEIGHT_GEN_SYS_MSG, WEIGHTS_GEN_USER_MSG
 from templates.prompt_templates.ReportGenerationTemplate import REPORT_GEN_SYS_MSG, REPORT_GEN_USER_MSG
 
 load_dotenv(override=True)
+logger = get_logger()
 
 class OpenAILLM:
     def __init__(
@@ -43,6 +44,7 @@ class OpenAILLM:
         self,
         system_message: str,
         user_message: str,
+        temperature: float
     ) -> LLMResponse:
         
         loop = asyncio.get_running_loop()
@@ -56,9 +58,9 @@ class OpenAILLM:
                     {'role': 'system', 'content': system_message},
                     {'role': 'user', 'content': user_message}
                 ],
-                temperature=self.temperature,
-                response_format='json',
-                timeout=180
+                temperature=temperature,
+                response_format={'type':'json_object'},
+                timeout=120
             )
         )
         time_end = time.perf_counter()
@@ -89,22 +91,25 @@ class OpenAILLM:
 
         retry = 0
         while retry < min(retry_limit, len(fallback_models)):
-            print(f"--> Attempting response with model: {self.model_name}.")
+            logger.info(f"Attempting response with model: {self.model_name}.")
+            if self.model_name in self.reasoning_models:
+                model_temperature = 1
+            else:
+                model_temperature = self.temperature
             try:
-                llm_response = await self._get_llm_response(system_message, user_message)
+                llm_response = await self._get_llm_response(system_message, user_message, model_temperature)
                 return llm_response
             
             except InvalidJsonFormatError:
-                print(f"--> Malformed JSON output: {self.model_name}")
+                logger.error(f"Malformed JSON output: {self.model_name}. Retrying with same model.")
                 retry += 1
             
             except Exception as e:
                 new_model = fallback_models[retry]
-                print(Fore.RED+f"[ERROR] API Response failed for LLM '{self.model_name}'. Retrying using LLM '{new_model}'.")
-                print(f"[REASON]"+Fore.RESET, e)
-                print()
-                retry += 1
+                logger.error(f"{self.provider_name} API Response failed for LLM '{self.model_name}'. Retrying using LLM '{new_model}'.")
+                logger.exception(e)
                 self._set_llm_model(new_model)
+                retry += 1
 
         raise LLMResponseFailedError(self.provider_name)
 
@@ -142,7 +147,7 @@ class OpenAILLM:
         self, 
         personal_data: str, 
     ) -> LLMResponse:
-        user_message = self.format_any_prompt_template(WEIGHT_GEN_SYS_MSG, personal_data=personal_data)
+        user_message = self.format_any_prompt_template(WEIGHTS_GEN_USER_MSG, personal_data=personal_data)
         return await self.get_model_response(WEIGHT_GEN_SYS_MSG, user_message)
 
 

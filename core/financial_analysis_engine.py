@@ -1,5 +1,5 @@
 import re
-import json
+from string import capwords
 from random import choice
 from typing import List, Union
 
@@ -426,19 +426,20 @@ class FinancialAnalysisEngine:
                 continue
             
             total_score += metric.assigned_score
-
+            capitalised_name = capwords(metric_name.replace('_', ' '))
+            capitalised_verdict = capwords(metric.verdict.replace('_', ' '))
             scoring_table.append({
-                "Metric": metric.metric_name or metric_name,
+                "Metric": capitalised_name,
                 "Weight Assigned": metric.weight,
                 "Benchmark": metric.benchmark,
                 "User Value": metric.value,
-                "Verdict": metric.verdict.capitalize(),
+                "Verdict": capitalised_verdict,
                 "Points Awarded": metric.assigned_score
             })
         
         # Append totals row
         scoring_table.append({
-            "Metric": 'total',
+            "Metric": 'Total',
             "Weight Assigned": '',
             "Benchmark": '',
             "User Value": '',

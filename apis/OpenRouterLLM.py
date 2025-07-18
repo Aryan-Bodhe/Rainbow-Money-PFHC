@@ -3,7 +3,6 @@ import time
 import asyncio
 from dotenv import load_dotenv
 from typing_extensions import Literal
-from colorama import Fore
 
 from openai import OpenAI
 
@@ -11,10 +10,12 @@ from apis.LLMResponse import LLMResponse
 from config.config import LLM_TEMP
 from core.exceptions import LLMResponseFailedError, InvalidJsonFormatError
 from utils.response_parsing import parse_llm_output
+from utils.logger import get_logger
 from templates.prompt_templates.weights_generation_template import WEIGHT_GEN_SYS_MSG, WEIGHTS_GEN_USER_MSG
 from templates.prompt_templates.ReportGenerationTemplate import REPORT_GEN_SYS_MSG, REPORT_GEN_USER_MSG
 
 load_dotenv(override=True)
+logger = get_logger()
 
 class OpenRouterLLM:
     def __init__(
@@ -96,17 +97,16 @@ class OpenRouterLLM:
         attempts = 0
 
         while attempts <= retry_limit and attempts <= len(fallback):
-            print(f"--> Attempting response with model: {self.model_name}")
+            logger.info(f"{self.provider_name} attempting response with model: {self.model_name}")
             try:
                 return await self._get_llm_response(system_message, user_message)
 
             except (InvalidJsonFormatError, Exception) as e:
                 if attempts < len(fallback):
                     new_model = fallback[attempts]
-                    print(Fore.RED + f"[ERROR] {self.provider_name} '{self.model_name}' failed. Switching to '{new_model}'." + Fore.RESET)
+                    logger.error(f"{self.provider_name} API Response failed for LLM '{self.model_name}'. Retrying using LLM '{new_model}'.")
                     self._set_llm_model(new_model)
                     attempts += 1
-                    await asyncio.sleep(0.5)
                     continue
                 break
 

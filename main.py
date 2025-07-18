@@ -19,7 +19,7 @@ class AnalysisRequest(BaseModel):
 @app.post('/personal-finance-health-analyzer')
 async def personal_finance_health_analysis(req: AnalysisRequest):
     logger = get_logger()
-    logger.info('----- New Request Received -----')
+    logger.info('---------- New Request Received ----------')
     try:
         if req.mode == 'basic' or req.mode == 'advanced':
             logger.info('Request is valid.')
@@ -57,4 +57,6 @@ if __name__ == '__main__':
 
     with open('sample_output.json', 'w') as file:
         json.dump(output.model_dump(), file, indent=2)
+
+    ### fix 999 issue
     

@@ -12,7 +12,7 @@
     "salaried_income": 450000,
     "business_income": 0,
     "freelance_income": 50000,
-    "investment_returns": 75000,
+    "other_sources": 75000,
     "rental_income": 50000
   },
   "expense_data": {

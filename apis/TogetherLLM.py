@@ -3,7 +3,6 @@ import time
 import asyncio
 from dotenv import load_dotenv
 from typing_extensions import Literal
-from colorama import Fore
 
 from openai import OpenAI
 
@@ -68,7 +67,7 @@ class TogetherLLM:
                     {"role": "user", "content": user_message}
                 ],
                 temperature=self.temperature,
-                timeout=180
+                timeout=120
             )
         duration = round(time.perf_counter() - start, 4)
 
@@ -106,11 +105,11 @@ class TogetherLLM:
                     advanced = False
                 return await self._get_llm_response(system_message, user_message, advanced)
 
-            except (InvalidJsonFormatError, Exception) as e:
+            except Exception as e:
                 # On JSON errors or other exceptions, switch model and retry
                 if attempts < len(fallback_models):
                     new_model = fallback_models[attempts]
-                    logger.error(f"{self.provider_name} response failed for '{self.model_name}', switching to '{new_model}'.")
+                    logger.error(f"{self.provider_name} API Response failed for LLM '{self.model_name}'. Retrying using LLM '{new_model}'.")
                     logger.exception(e)
                     self._set_llm_model(new_model)
                     attempts += 1

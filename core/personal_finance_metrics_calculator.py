@@ -3,6 +3,7 @@ from data.ideal_benchmark_data import IDEAL_RANGES
 from models.UserProfile import UserProfile
 from models.DerivedMetrics import PersonalFinanceMetrics, Metric
 from .user_segment_classifier import classify_city_tier, classify_income_bracket
+from utils.logger import get_logger
 from config.config import (
     ANNUAL_INFLATION_RATE, 
     AVG_LIFE_EXPECTANCY, 
@@ -65,7 +66,8 @@ class PersonalFinanceMetricsCalculator:
             try:
                 value = func(user_profile)
             except InvalidFinanceParameterError as e:
-                print(e)
+                # print(e)
+                get_logger().warning(e)
                 value = 999
 
             value = round(value, 2)
@@ -188,7 +190,7 @@ class PersonalFinanceMetricsCalculator:
         total = (
             self.user_profile.income_data.business_income +
             self.user_profile.income_data.freelance_income +
-            self.user_profile.income_data.investment_returns + 
+            self.user_profile.income_data.other_sources + 
             self.user_profile.income_data.rental_income + 
             self.user_profile.income_data.salaried_income
         )
