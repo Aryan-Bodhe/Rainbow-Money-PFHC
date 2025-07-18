@@ -28,8 +28,6 @@ STEP 2 : Generate an optimistic summary from all of the above mentioned data in 
 
 """
 
-SUMMARY_GENERATION_FALLBACK_TEXT = """
-
-This summary provides a general overview based on standard financial best practices. Building consistent savings, managing expenses wisely, and investing with clear goals in mind are essential for financial health. Ensure adequate emergency funds and insurance coverage. Regularly review your financial plan to stay aligned with your long-term objectives.
-
-"""
+SUMMARY_GENERATION_FALLBACK_TEXT = {
+"summary": "This summary provides a general overview based on standard financial best practices. Building consistent savings, managing expenses wisely, and investing with clear goals in mind are essential for financial health. Ensure adequate emergency funds and insurance coverage. Regularly review your financial plan to stay aligned with your long-term objectives."
+}

@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Literal
 import tracemalloc
+from openai import APIConnectionError
 
 from utils.logger import get_logger
 from models.UserProfile import UserProfile
@@ -38,9 +39,11 @@ async def personal_finance_health_analysis(req: AnalysisRequest):
         else:
             logger.error('Invalid report generation mode received.')
             raise HTTPException(status_code=400, detail="Invalid mode specified.")
+    except APIConnectionError:
+        raise HTTPException(status_code=503, detail="Could not reach our servers. Please check your connection and try again.")
     except Exception as e:
         logger.exception(e)
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Analysis failed due to an unexpected error. Please try later.")
 
 if __name__ == '__main__':
     with open('data/test_data/average_profile.json') as file:

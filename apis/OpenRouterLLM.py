@@ -4,7 +4,7 @@ import asyncio
 from dotenv import load_dotenv
 from typing_extensions import Literal
 
-from openai import OpenAI
+from openai import APIConnectionError, AuthenticationError, OpenAI, OpenAIError, RateLimitError, Timeout
 
 from apis.LLMResponse import LLMResponse
 from config.config import LLM_TEMP
@@ -67,7 +67,7 @@ class OpenRouterLLM:
             ],
             temperature=self.temperature,
             response_format='json',
-            timeout=180
+            timeout=100
         )
         duration = round(time.perf_counter() - start, 4)
 
@@ -91,19 +91,47 @@ class OpenRouterLLM:
         retry_limit: int = 1
     ) -> LLMResponse:
         """
-        Core async call with fallback and retry logic.
+        Core async call with fallback_models and retry logic.
         """
-        fallback = [m for m in self.fallback_models if m != self.model_name]
+        fallback_models = [m for m in self.fallback_models if m != self.model_name]
+
+        ret_limit = min(retry_limit, len(fallback_models))
         attempts = 0
 
-        while attempts <= retry_limit and attempts <= len(fallback):
+        while attempts <= ret_limit:
             logger.info(f"{self.provider_name} attempting response with model: {self.model_name}")
             try:
                 return await self._get_llm_response(system_message, user_message)
+            
+            except InvalidJsonFormatError:
+                logger.error(f"Malformed JSON output: {self.model_name}. Retrying with same model.")
+                retry += 1
+            
+            except APIConnectionError:
+                logger.error(f'Connection to {self.provider_name} API failed. Retrying with delay.')
+                raise
 
-            except (InvalidJsonFormatError, Exception) as e:
-                if attempts < len(fallback):
-                    new_model = fallback[attempts]
+            except Timeout:
+                logger.error(f'LLM response from {self.provider_name} timed out. Aborting.')
+                raise
+
+            except RateLimitError:
+                logger.critical(f'{self.provider_name} hit rate limits, cannot process request now. Aborting.')
+                raise
+
+            except OpenAIError as e:
+                logger.critical(f'Unexpected {self.provider_name} error. Aborting.')
+                logger.exception(e)
+                raise
+            
+            except AuthenticationError:
+                logger.critical(f'API keu auth failed for {self.provider_name}. Aborting.')
+                raise
+
+
+            except Exception as e:
+                if attempts < len(fallback_models):
+                    new_model = fallback_models[attempts]
                     logger.error(f"{self.provider_name} API Response failed for LLM '{self.model_name}'. Retrying using LLM '{new_model}'.")
                     self._set_llm_model(new_model)
                     attempts += 1
@@ -181,7 +209,7 @@ class OpenRouterLLM:
             'DeepSeek_V3', 'Nvidia_Nemotron', 'DeepSeek_R1_Qwen'
         ]
     ):
-        """Updates model to a fallback identifier."""
+        """Updates model to a fallback_models identifier."""
         chosen = self.model_map.get(model, self.model_map[self.fallback_models[0]])
         self.model_name = model
         self.model      = chosen

@@ -4,7 +4,7 @@ import asyncio
 from dotenv import load_dotenv
 from typing_extensions import Literal
 
-from openai import OpenAI
+from openai import APIConnectionError, AuthenticationError, OpenAI, OpenAIError, RateLimitError, Timeout
 
 from apis.LLMResponse import LLMResponse
 from config.config import LLM_TEMP
@@ -56,7 +56,7 @@ class TogetherLLM:
                 ],
                 temperature=self.temperature,
                 response_format='json',
-                timeout=180
+                timeout=100
             )
         else:
             response = await asyncio.to_thread(
@@ -67,7 +67,7 @@ class TogetherLLM:
                     {"role": "user", "content": user_message}
                 ],
                 temperature=self.temperature,
-                timeout=120
+                timeout=100
             )
         duration = round(time.perf_counter() - start, 4)
 
@@ -96,23 +96,50 @@ class TogetherLLM:
         Attempts to get a response, retries on failure with fallback models.
         """
         fallback_models = [m for m in self.fallback_models if m != self.model_name]
-        attempts = 0
+        retry = 0
 
-        while attempts <= retry_limit and attempts <= len(fallback_models):
+        ret_limit = min(retry_limit, len(fallback_models))
+
+        while retry <= ret_limit:
             logger.info(f'Attempting response with model: {self.model_name}.')
             try:
                 if self.model_name not in self.models_support_json:
                     advanced = False
                 return await self._get_llm_response(system_message, user_message, advanced)
 
+            except InvalidJsonFormatError:
+                logger.error(f"Malformed JSON output: {self.model_name}. Retrying with same model.")
+                retry += 1
+            
+            except APIConnectionError:
+                logger.error(f'Connection to {self.provider_name} API failed. Retrying with delay.')
+                raise
+
+            except Timeout:
+                logger.error(f'LLM response from {self.provider_name} timed out. Aborting.')
+                raise
+
+            except RateLimitError:
+                logger.critical(f'{self.provider_name} hit rate limits, cannot process request now. Aborting.')
+                raise
+
+            except OpenAIError as e:
+                logger.critical(f'Unexpected {self.provider_name} error. Aborting.')
+                logger.exception(e)
+                raise
+            
+            except AuthenticationError:
+                logger.critical(f'API keu auth failed for {self.provider_name}. Aborting.')
+                raise
+
             except Exception as e:
-                # On JSON errors or other exceptions, switch model and retry
-                if attempts < len(fallback_models):
-                    new_model = fallback_models[attempts]
+                # On other exceptions, switch model and retry
+                if retry < len(fallback_models):
+                    new_model = fallback_models[retry]
                     logger.error(f"{self.provider_name} API Response failed for LLM '{self.model_name}'. Retrying using LLM '{new_model}'.")
                     logger.exception(e)
                     self._set_llm_model(new_model)
-                    attempts += 1
+                    retry += 1
                     continue
                 break
 

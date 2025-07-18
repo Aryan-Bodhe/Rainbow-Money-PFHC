@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from typing_extensions import Literal
 
 from openai import OpenAI
+from openai import OpenAIError, APIConnectionError, RateLimitError, Timeout, AuthenticationError
 
 from config.config import LLM_TEMP
 from .LLMResponse import LLMResponse
@@ -60,10 +61,12 @@ class OpenAILLM:
                 ],
                 temperature=temperature,
                 response_format={'type':'json_object'},
-                timeout=120
+                timeout=100
             )
         )
         time_end = time.perf_counter()
+
+        output = parse_llm_output(response.choices[0].message.content)
 
         metadata = {
             'response_time': round(time_end - time_start, 2),
@@ -73,8 +76,6 @@ class OpenAILLM:
                 'total_tokens': response.usage.total_tokens
             }
         }
-
-        output = parse_llm_output(response.choices[0].message.content)
         return LLMResponse(content=output, metadata=metadata)
 
 
@@ -90,7 +91,9 @@ class OpenAILLM:
             fallback_models.remove(self.model_name)
 
         retry = 0
-        while retry < min(retry_limit, len(fallback_models)):
+        ret_limit = min(retry_limit, len(fallback_models))
+        
+        while retry <= ret_limit:
             logger.info(f"Attempting response with model: {self.model_name}.")
             if self.model_name in self.reasoning_models:
                 model_temperature = 1
@@ -104,9 +107,32 @@ class OpenAILLM:
                 logger.error(f"Malformed JSON output: {self.model_name}. Retrying with same model.")
                 retry += 1
             
+            except APIConnectionError:
+                logger.error(f'Connection to {self.provider_name} API failed. Retrying with delay.')
+                if retry == ret_limit:
+                    raise
+                retry += 1
+
+            except Timeout:
+                logger.error(f'LLM response from {self.provider_name} timed out. Aborting.')
+                raise
+
+            except RateLimitError:
+                logger.critical(f'{self.provider_name} hit rate limits, cannot process request now. Aborting.')
+                raise
+
+            except OpenAIError as e:
+                logger.critical(f'Unexpected {self.provider_name} error. Aborting.')
+                logger.exception(e)
+                raise
+            
+            except AuthenticationError:
+                logger.critical(f'API keu auth failed for {self.provider_name}. Aborting.')
+                raise
+
             except Exception as e:
                 new_model = fallback_models[retry]
-                logger.error(f"{self.provider_name} API Response failed for LLM '{self.model_name}'. Retrying using LLM '{new_model}'.")
+                logger.error(f"{self.provider_name} API Response failed for LLM '{self.model_name}'.")
                 logger.exception(e)
                 self._set_llm_model(new_model)
                 retry += 1

@@ -4,7 +4,7 @@ from functools import lru_cache
 
 from config.config import GLOSSARY_PATH
 from core.exceptions import CriticalInternalFailure
-from core.personal_finance_metrics_calculator import PersonalFinanceMetricsCalculator as PFMC
+from core.metrics_calculator import PersonalFinanceMetricsCalculator as PFMC
 from core.financial_analysis_engine import FinancialAnalysisEngine
 from models.UserProfile import UserProfile
 from models.DerivedMetrics import Metric, PersonalFinanceMetrics

@@ -19,8 +19,6 @@ Step 2: Return a overall understanding of the user's financial situation as a JS
 
 """
 
-PROFILE_REVIEW_FALLBACK_TEXT = """
-
-Your financial profile reflects a balanced mix of income, savings, and investments. While specific insights couldn’t be generated, maintaining a strong savings habit and keeping debt under control are key to long-term stability. It's important to align your investments with your risk appetite and future goals. Ensure your emergency fund is adequate and your insurance coverage is up to date. Periodic reviews can help you stay on track. Try again later for a more personalized review.
-
-"""
+PROFILE_REVIEW_FALLBACK_TEXT = {
+"profile_review": "Your financial profile reflects a balanced mix of income, savings, and investments. While specific insights couldn’t be generated, maintaining a strong savings habit and keeping debt under control are key to long-term stability. It's important to align your investments with your risk appetite and future goals. Ensure your emergency fund is adequate and your insurance coverage is up to date. Periodic reviews can help you stay on track. Try again later for a more personalized review."
+}

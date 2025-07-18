@@ -1,7 +1,9 @@
 import asyncio
 import json
+from openai import APIConnectionError
+
 from config.config import GLOSSARY_PATH
-from core.personal_finance_metrics_calculator import PersonalFinanceMetricsCalculator as PFMC
+from core.metrics_calculator import PersonalFinanceMetricsCalculator as PFMC
 from core.exceptions import CriticalInternalFailure
 from models.DerivedMetrics import Metric, PersonalFinanceMetrics
 from models.UserProfile import UserProfile
@@ -62,7 +64,6 @@ async def assemble_report_data_llm_based(user_profile: UserProfile) -> ReportDat
             system_msg=PROFILE_REVIEW_SYS_MSG,
             user_msg=PROFILE_REVIEW_USER_MSG,
             user_profile=user_profile_str,
-            
         ),
         llm_heavy.generate_report_part(
             system_msg=COMMENDABLE_AREAS_SYS_MSG,
@@ -80,6 +81,14 @@ async def assemble_report_data_llm_based(user_profile: UserProfile) -> ReportDat
     )
 
     weight_data, review_data, comm_data, improv_data = results
+    logger.info(comm_data)
+    logger.info(improv_data)
+
+    if isinstance(comm_data, APIConnectionError):
+        raise comm_data
+    
+    if isinstance(improv_data, APIConnectionError):
+        raise improv_data
 
     if isinstance(comm_data, Exception) or isinstance(improv_data, Exception):
         logger.critical('Failed to get valid LLM response for commendable points or improvement_points. Aborting.')
