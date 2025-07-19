@@ -55,9 +55,15 @@ def _score_value(metric: Metric, ideal_min: float, ideal_max: float, max_score: 
     """
     Compute score for a metric based on its value vs benchmark range.
     """
+    lower_better_metrics = ['expense_income_ratio', 'debt_income_ratio', 'housing_income_ratio']
     val = metric.value
     if val is None or max_score == 0:
         return 0.0
+    if val == 999:
+        if metric.metric_name in lower_better_metrics:
+            return 0.0
+        else:
+            return max_score
     if ideal_min <= val <= ideal_max:
         return max_score
     ratio = val / ideal_min if val < ideal_min else ideal_max / val
