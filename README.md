@@ -1,7 +1,3 @@
-Thanks for the clarification! Here's your clean and updated `README.md` without any license references:
-
----
-
 ## 🌈 Rainbow Money PFHC
 
 **Personal Finance Health Calculator**
