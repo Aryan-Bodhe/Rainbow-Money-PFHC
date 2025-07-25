@@ -1,53 +1,56 @@
 {
-  "personal_data": {
-    "age": 42,
-    "gender": "Male",
-    "city": "Lucknow",
-    "risk_profile": "Conservative",
-    "expected_retirement_age": 65,
-    "marital_status": "Married",
-    "no_of_dependents": 2
-  },
-  "income_data": {
-    "salaried_income": 60000,
-    "business_income": 0,
-    "freelance_income": 10000,
-    "other_sources": 3000,
-    "rental_income": 5000
-  },
-  "expense_data": {
-    "housing_cost": 10000,
-    "utilities_and_bills": 3000,
-    "groceries_and_essentials": 9000,
-    "term_insurance_premium": 1500,
-    "medical_insurance_premium": 1500,
-    "discretionary_expense": 6000
-  },
-  "asset_data": {
-    "equity_sip": 5000,
-    "debt_sip": 3000,
-    "retirement_sip": 4000,
-    "total_savings_balance": 200000,
-    "total_emergency_fund": 100000,
-    "total_equity_investments": 150000,
-    "total_debt_investments": 200000,
-    "total_retirement_investments": 250000,
-    "total_real_estate_investments": 1000000
-  },
-  "liability_data": {
-    "credit_card_emi": 0,
-    "personal_loan_emi": 0,
-    "car_loan_emi": 3000,
-    "student_loan_emi": 0,
-    "home_loan_emi": 0,
-    "outstanding_credit_card_balance": 0,
-    "outstanding_personal_loan_balance": 0,
-    "outstanding_car_loan_balance": 100000,
-    "outstanding_student_loan_balance": 0,
-    "outstanding_home_loan_balance": 0
-  },
-  "insurance_data": {
-    "total_medical_cover": 1000000,
-    "total_term_cover": 3000000
+  "mode":"basic",
+  "data": {
+    "personal_data": {
+      "age": 42,
+      "gender": "Male",
+      "city": "Lucknow",
+      "risk_profile": "Conservative",
+      "expected_retirement_age": 65,
+      "marital_status": "Married",
+      "no_of_dependents": 2
+    },
+    "income_data": {
+      "salaried_income": 60000,
+      "business_income": 0,
+      "freelance_income": 10000,
+      "other_sources": 3000,
+      "rental_income": 5000
+    },
+    "expense_data": {
+      "housing_cost": 10000,
+      "utilities_and_bills": 3000,
+      "groceries_and_essentials": 9000,
+      "term_insurance_premium": 1500,
+      "medical_insurance_premium": 1500,
+      "discretionary_expense": 6000
+    },
+    "asset_data": {
+      "equity_sip": 5000,
+      "debt_sip": 3000,
+      "retirement_sip": 4000,
+      "total_savings_balance": 200000,
+      "total_emergency_fund": 100000,
+      "total_equity_investments": 150000,
+      "total_debt_investments": 200000,
+      "total_retirement_investments": 250000,
+      "total_real_estate_investments": 1000000
+    },
+    "liability_data": {
+      "credit_card_emi": 0,
+      "personal_loan_emi": 0,
+      "car_loan_emi": 3000,
+      "student_loan_emi": 0,
+      "home_loan_emi": 0,
+      "outstanding_credit_card_balance": 0,
+      "outstanding_personal_loan_balance": 0,
+      "outstanding_car_loan_balance": 100000,
+      "outstanding_student_loan_balance": 0,
+      "outstanding_home_loan_balance": 0
+    },
+    "insurance_data": {
+      "total_medical_cover": 1000000,
+      "total_term_cover": 3000000
+    }
   }
 }

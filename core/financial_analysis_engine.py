@@ -6,12 +6,13 @@ from typing import List, Union
 from core.user_segment_classifier import classify_income_bracket
 from data.ideal_benchmark_data import IDEAL_RANGES
 from models.DerivedMetrics import PersonalFinanceMetrics, Metric
-from models.ReportData import CommendablePoint, ImprovementPoint, ReportData
+from models.ReportData import CommendablePoint, ReviewPoint, ImprovementPoint, ReportData
 from models.UserProfile import UserProfile
 from config.config import MEDICAL_COVER_FACTOR, TERM_COVER_FACTOR, SCORING_BASE_VALUE
 from core.exceptions import FeedbackGenerationFailedError
 from templates.feedback_templates.areas_for_improvement_templates import AREAS_FOR_IMPROVEMENT
 from templates.feedback_templates.commendable_areas_template import COMMENDABLE_AREAS
+from templates.feedback_templates.review_areas_templates import REVIEW_AREAS
 from templates.feedback_templates.header_templates import HEADER_TEMPLATES
 
 class FinancialAnalysisEngine:
@@ -19,20 +20,30 @@ class FinancialAnalysisEngine:
         self.user_profile: UserProfile = None
         self.derived_metrics: PersonalFinanceMetrics = None
         self.good_labels = ['good', 'excellent']
-        self.bad_labels = ['extremely_low', 'extremely_high', 'low', 'high']
+        self.review_labels = ['high', 'extremely_high']
+        self.bad_labels = ['extremely_low', 'low', 'high', 'extremely_high']
+        self.metrics_analysed = []
         self.header_templates = HEADER_TEMPLATES
+        self.assessment_fields = [
+            'savings_income_ratio', 'investment_income_ratio', 'expense_income_ratio',
+            'debt_income_ratio', 'emergency_fund_ratio', 'liquidity_ratio',
+            'asset_liability_ratio', 'housing_income_ratio',
+            'health_insurance_adequacy', 'term_insurance_adequacy',
+            'net_worth_adequacy', 'retirement_adequacy'
+        ]
 
     def analyse(self, user_profile: UserProfile, pfm: PersonalFinanceMetrics):
         pfm = self._get_benchmarks(pfm)
         pfm = self._generate_metric_verdicts(pfm)
         pfm = self._score_metrics(pfm)
 
-        commendable_points, improvement_points = self._generate_feedbacks(user_profile, pfm)
+        commendable_points, improvement_points, review_points = self._generate_feedbacks(user_profile, pfm)
         metrics_table = self.get_metrics_scoring_table(pfm)
         
         return ReportData(
             commendable_areas=commendable_points,
             areas_for_improvement=improvement_points,
+            review_areas=review_points,
             metrics_scoring_table=metrics_table
         )
 
@@ -54,16 +65,10 @@ class FinancialAnalysisEngine:
 
         return pfm
 
-    def _filter_metrics_by_names(self):
-        comm_metrics, impr_metrics = [], []
+    def _filter_metrics_by_names(self) -> tuple[list, list, list]:
+        comm_metrics, impr_metrics, review_metrics = [], [], []
         # Only check your assessment fields
-        assessment_fields = [
-            'savings_income_ratio', 'investment_income_ratio', 'expense_income_ratio',
-            'debt_income_ratio', 'emergency_fund_ratio', 'liquidity_ratio',
-            'asset_liability_ratio', 'housing_income_ratio',
-            'health_insurance_adequacy', 'term_insurance_adequacy',
-            'net_worth_adequacy', 'retirement_adequacy'
-        ]
+        assessment_fields = self.assessment_fields
 
         for name in assessment_fields:
             metric_obj = getattr(self.derived_metrics, name, None)
@@ -71,10 +76,12 @@ class FinancialAnalysisEngine:
                 continue
             if metric_obj.verdict in self.good_labels:
                 comm_metrics.append(name)
-            elif metric_obj.verdict in self.bad_labels:
+            if metric_obj.verdict in self.bad_labels:
                 impr_metrics.append(name)
+            if metric_obj.verdict in self.review_labels:
+                review_metrics.append(name)
 
-        return comm_metrics, impr_metrics
+        return comm_metrics, impr_metrics, review_metrics
 
     def _generate_metric_verdicts(
         self,
@@ -86,17 +93,11 @@ class FinancialAnalysisEngine:
         # Relaxation thresholds
         low_relax_stage_1 = 0.85
         high_relax_stage_1 = 1.15
-        low_relax_stage_2 = 0.7
-        high_relax_stage_2 = 1.3
+        low_relax_stage_2 = 0.75
+        high_relax_stage_2 = 1.25
 
         # Only these fields need assessment
-        assessment_fields = [
-            'savings_income_ratio', 'investment_income_ratio', 'expense_income_ratio',
-            'debt_income_ratio', 'emergency_fund_ratio', 'liquidity_ratio',
-            'asset_liability_ratio', 'housing_income_ratio',
-            'health_insurance_adequacy', 'term_insurance_adequacy',
-            'net_worth_adequacy', 'retirement_adequacy'
-        ]
+        assessment_fields = self.assessment_fields
 
         for field in assessment_fields:
             metric_obj: Metric = getattr(pfm, field, None)
@@ -162,7 +163,7 @@ class FinancialAnalysisEngine:
         self,
         user_profile: UserProfile,
         derived_metrics: PersonalFinanceMetrics,
-    ) -> tuple[List[CommendablePoint], List[ImprovementPoint]]:
+    ) -> tuple[List[CommendablePoint], List[ImprovementPoint], List[ReviewPoint]]:
         
         if not all([user_profile, derived_metrics]):
             raise FeedbackGenerationFailedError()
@@ -170,12 +171,35 @@ class FinancialAnalysisEngine:
         self.derived_metrics = derived_metrics
 
         # self.derived_metrics = self.generate_metric_verdicts(self.derived_metrics, self.benchmark_data)
-        good_metrics, bad_metrics = self._filter_metrics_by_names()
+        good_metrics, bad_metrics, review_metrics = self._filter_metrics_by_names()
 
         good_points: List[CommendablePoint] = self._generate_commendable_points(derived_metrics, good_metrics)
+        review_points: List[ReviewPoint] = self._generate_review_points(derived_metrics, review_metrics) ## review must be called before bad points as non review points falls through
         bad_points: List[ImprovementPoint] = self._generate_improvement_points(derived_metrics, bad_metrics)
 
-        return (good_points, bad_points)
+        return (good_points, bad_points, review_points)
+    
+    def _generate_review_points(
+        self,
+        derived_metrics: PersonalFinanceMetrics,
+        review_metrics: List[str]
+    ) -> List[ReviewPoint]:
+        
+        review_points = []
+
+        for metric_name in review_metrics:
+            metric_data = getattr(derived_metrics, metric_name)
+            if self.metrics_analysed.count(metric_name):
+                continue
+            feedback = self._create_review_point(metric_data)
+            if feedback is not None:
+                review_points.append((metric_name, feedback))
+                self.metrics_analysed.append(metric_name)
+
+        sorted_review  = self._sort_points(review_points)
+        review_points=[pt for _, pt in sorted_review]
+
+        return review_points
     
     def _generate_improvement_points(
         self,
@@ -187,8 +211,12 @@ class FinancialAnalysisEngine:
 
         for metric_name in bad_metrics:
             metric_data = getattr(derived_metrics, metric_name)
+            if self.metrics_analysed.count(metric_name):
+                continue
             feedback = self._create_improvement_point(metric_data)
-            bad_points.append((metric_name, feedback))
+            if feedback is not None:
+                bad_points.append((metric_name, feedback))
+                self.metrics_analysed.append(metric_name)
 
         sorted_bad  = self._sort_points(bad_points)
         improvement_points=[pt for _, pt in sorted_bad]
@@ -205,13 +233,29 @@ class FinancialAnalysisEngine:
 
         for metric_name in good_metrics:
             metric_data = getattr(derived_metrics, metric_name)
+            if self.metrics_analysed.count(metric_name):
+                continue
             feedback = self._create_commend_point(metric_data)
-            good_points.append((metric_name, feedback))
+            if feedback is not None:
+                good_points.append((metric_name, feedback))
+                self.metrics_analysed.append(metric_name)
 
         sorted_good = self._sort_points(good_points)
         commendable_points=[pt for _, pt in sorted_good]
 
         return commendable_points
+    
+    def _create_review_point(self, metric: Metric) -> ReviewPoint:
+        min_b, max_b = metric.benchmark
+        formatted = self._get_formatted_review_point(metric, min_b, max_b)
+        if formatted is None:
+            return None
+
+        return ReviewPoint(
+            metric_name=metric.metric_name,
+            header=self._generate_feedback_header(metric),
+            current_scenario=formatted['current_scenario']
+        )
 
     def _create_commend_point(self, metric: Metric) -> CommendablePoint:
         min_b, max_b = metric.benchmark
@@ -298,6 +342,26 @@ class FinancialAnalysisEngine:
             return max(min(gap_vals), MIN_THRESH)
         except ZeroDivisionError:
             return MIN_THRESH
+        
+    def _get_formatted_review_point(self, metric: Metric, min_b: float, max_b: float):
+        template = REVIEW_AREAS.get(metric.metric_name)
+        if not template:
+            return None
+        
+        template = template.get(metric.verdict)
+        curr_scnr = template.get('current_scenario')
+        places = re.findall(r'{(\w+)[^}]*}', curr_scnr)
+        ctx = {
+            'user_value': metric.value,
+            'min_val': min_b,
+            'max_val': max_b
+        }
+
+        filtered_ctx = {k: v for k, v in ctx.items() if k in places}
+
+        return {
+            'current_scenario': curr_scnr.format(**filtered_ctx)
+        }
 
     def _get_formatted_commend_point(self, metric: Metric):
         template = COMMENDABLE_AREAS.get(metric.metric_name)
@@ -307,6 +371,7 @@ class FinancialAnalysisEngine:
             }
         template = template.get(metric.verdict)
         curr_scnr = template.get('current_scenario')
+
 
         return {
             'current_scenario': curr_scnr.format(user_value=metric.value)
@@ -407,8 +472,10 @@ class FinancialAnalysisEngine:
             return 0.0
         if ideal_min <= val <= ideal_max or val == 999:
             return max_score
+        if ideal_max <= val:
+            return 0.85 * max_score
         ratio = val / ideal_min if val < ideal_min else ideal_max / val
-        return max_score * (SCORING_BASE_VALUE + (1 - SCORING_BASE_VALUE) * max(0.0, min(1.0, ratio)))
+        return max_score * (SCORING_BASE_VALUE + (1 - SCORING_BASE_VALUE) * max(0.0, min(1.0, ratio))) ** 3
 
     def get_metrics_scoring_table(self, pfm: PersonalFinanceMetrics) -> list[dict]:
         """

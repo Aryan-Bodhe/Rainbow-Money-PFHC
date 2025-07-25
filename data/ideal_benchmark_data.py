@@ -37,9 +37,9 @@ IDEAL_RANGES = {
     # flat ideal ranges for other ratios:
     "emergency_fund_ratio":       (6, 12),   # months
     "liquidity_ratio":            (3, 6),    # months
-    "asset_liability_ratio":      (2.0, 4.0),
-    "health_insurance_adequacy":  (1.0, 1.2), # ratio vs recommended
-    "term_insurance_adequacy":    (1.0, 1.2),
-    "net_worth_adequacy":         (1.0, 2.0),
-    "retirement_adequacy":        (1.0, 1.0), # at least 1×
+    "asset_liability_ratio":      (2.0, 5.0),
+    "health_insurance_adequacy":  (1.0, 2.0), # ratio vs recommended
+    "term_insurance_adequacy":    (1.0, 2.0),
+    "net_worth_adequacy":         (1.0, 3.0),
+    "retirement_adequacy":        (1.0, 2.5), # at least 1×
 }
