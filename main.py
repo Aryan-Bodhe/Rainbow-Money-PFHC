@@ -44,22 +44,3 @@ async def personal_finance_health_analysis(req: AnalysisRequest):
     except Exception as e:
         logger.exception(e)
         raise HTTPException(status_code=500, detail="Analysis failed due to an unexpected error. Please try later.")
-
-if __name__ == '__main__':
-    with open('data/test_data/average_profile.json') as file:
-        user_data = json.load(file)
-    
-    output = asyncio.run(
-        personal_finance_health_analysis(
-            AnalysisRequest(
-                mode='advanced',
-                data=UserProfile(**user_data)
-            )
-        )
-    )
-
-    with open('sample_output.json', 'w') as file:
-        json.dump(output.model_dump(), file, indent=2)
-
-    ### fix 999 issue
-    

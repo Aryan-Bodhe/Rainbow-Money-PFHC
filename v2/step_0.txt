@@ -1,0 +1,8 @@
+['Data Analyst', 'Financial Strategist', 'Risk Auditor', 'Product Recommender', 'Communicator']
+
+Justification:
+1. **Data Analyst**: Initial deep dive into provided financial metrics and ratios to understand current financial health comprehensively.
+2. **Financial Strategist**: Based on analyzed data, devise tailored strategies for optimizing investments and aligning financial goals, especially retirement corpus accumulation.
+3. **Risk Auditor**: Assess potential financial risks given the current asset-liability mix and high investment in real estate, ensuring stability against market fluctuations.
+4. **Product Recommender**: Recommend specific financial products or adjustments in asset distribution to better meet savings, investment, and retirement targets efficiently.
+5. **Communicator**: Summarize findings and strategic recommendations to the user clearly, ensuring understanding and actionable steps are clear.
